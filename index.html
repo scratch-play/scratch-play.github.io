@@ -25,7 +25,7 @@
             margin-bottom: 25px;
         }
 
-        /* Поле поиска */
+        /* Адаптивная строка поиска */
         #search-input {
             width: 100%;
             max-width: 400px;
@@ -41,7 +41,7 @@
             outline: none;
         }
 
-        /* Адаптивная сетка проектов */
+        /* Адаптивная CSS-сетка проектов */
         .projects {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -86,7 +86,6 @@
             line-height: 1.4;
         }
 
-        /* Окна контента и игры */
         #game-container {
             width: 100%;
             display: none;
@@ -115,11 +114,11 @@
             background: #357ae8;
         }
 
-        /* Адаптивный контейнер для iframe (сохраняет пропорции 16:9) */
+        /* Адаптивный контейнер для игрового окна (16:9) */
         .iframe-wrapper {
             position: relative;
             width: 100%;
-            padding-top: 56.25%; /* Пропорции 16:9 */
+            padding-top: 56.25%;
             border-radius: 10px;
             overflow: hidden;
             border: 2px solid #ccc;
@@ -132,7 +131,7 @@
             height: 100%;
         }
 
-        /* Мобильные оптимизации */
+        /* Оптимизация сетки под мобильные телефоны */
         @media (max-width: 480px) {
             body { padding: 10px; }
             .projects { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
@@ -166,18 +165,14 @@
         let offset = 0;
         let allProjects = []; 
 
-        const PROXY_LIST = [
-            (url) => `https://corsproxy.io{encodeURIComponent(url)}`,
-            (url) => `https://allorigins.win{encodeURIComponent(url)}`,
-            (url) => `https://freeboard.io{url}`
-        ];
-        let currentProxyIndex = 0;
+        // Ваша личная ссылка на прокси-сервер Vercel
+        const PROXY_URL = 'https://vercel.app';
 
         async function loadNextBatch() {
             const statusElement = document.getElementById('status');
             try {
                 const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
-                const finalUrl = PROXY_LIST[currentProxyIndex](targetUrl);
+                const finalUrl = PROXY_URL + encodeURIComponent(targetUrl);
                 
                 const response = await fetch(finalUrl);
                 if (!response.ok) throw new Error(`Сервер вернул статус ${response.status}`);
@@ -189,7 +184,8 @@
                     offset += LIMIT;
                     statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
                     
-                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    // Небольшая задержка перед следующим шагом (свой прокси отвечает мгновенно)
+                    await new Promise(resolve => setTimeout(resolve, 300));
                     loadNextBatch();
                 } else {
                     if (allProjects.length === 0) {
@@ -201,23 +197,14 @@
                     }
                 }
             } catch (error) {
-                console.warn(`Прокси ${currentProxyIndex} завершился ошибкой:`, error.message);
-                currentProxyIndex++;
-                
-                if (currentProxyIndex < PROXY_LIST.length) {
-                    statusElement.textContent = `Смена сервера загрузки (Попытка ${currentProxyIndex + 1})...`;
-                    setTimeout(loadNextBatch, 500);
-                } else {
-                    console.error('Все прокси-серверы вернули ошибку.');
-                    statusElement.style.background = '#ffdddd';
-                    statusElement.style.color = '#cc0000';
-                    statusElement.textContent = 'Все сервера перегружены. Пожалуйста, обновите страницу через Ctrl+F5.';
-                    currentProxyIndex = 0; 
-                }
+                console.error('Ошибка загрузки:', error);
+                statusElement.style.background = '#ffdddd';
+                statusElement.style.color = '#cc0000';
+                statusElement.textContent = 'Ошибка загрузки. Проверьте статус вашего прокси-сервера на Vercel.';
             }
         }
 
-        // Активация строки поиска после завершения загрузки данных
+        // Активация «живого» поиска по мере ввода текста
         function enableSearch() {
             const searchInput = document.getElementById('search-input');
             searchInput.disabled = false;
@@ -230,6 +217,7 @@
             });
         }
 
+        // Отрисовка карточек проектов с картинками
         function renderProjects(projectsList) {
             const projectsElement = document.getElementById('projects');
             projectsElement.innerHTML = '';
@@ -241,7 +229,7 @@
                 const imgElement = document.createElement('img');
                 imgElement.src = project.image || `https://mit.edu{project.id}_282x218.png`;
                 imgElement.alt = project.title;
-                imgElement.loading = "lazy"; // Оптимизация загрузки картинок
+                imgElement.loading = "lazy"; // Оптимизация: ленивая загрузка картинок
                 
                 const infoElement = document.createElement('div');
                 infoElement.classList.add('project-info');
@@ -271,6 +259,7 @@
             document.getElementById('scratch-iframe').src = '';
         }
 
+        // Запуск логики при открытии страницы
         loadNextBatch();
     </script>
 </body>
