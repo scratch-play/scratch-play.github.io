@@ -5,11 +5,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scratch Студия</title>
     <style>
-        /* ... ваш CSS-код ... */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #fafafa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: center;
+        }
+
+        #status {
+            font-weight: bold;
+            padding: 10px 15px;
+            background: #eee;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        #search-input {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        #search-input:focus {
+            border-color: #4c97ff;
+        }
+
+        #search-input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-random, button.btn-back {
+            padding: 12px 20px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-random {
+            background: #2ecc71;
+            display: none;
+        }
+
+        button.btn-back {
+            background: #4c97ff;
+            margin-bottom: 20px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            border-color: #4c97ff;
+        }
+
+        .project-card img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+        }
+
+        .project-card-title {
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #game-view, #search-input:disabled {
+            display: none;
+        }
+
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #ddd;
+        }
+
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            #search-input, .btn-random {
+                width: 100%;
+                order: 2;
+            }
+
+            .projects-grid {
+                grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+                gap: 12px;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- ... ваш HTML ... -->
+    <div class="container" id="catalog-view">
+        <h1>Список проектов студии</h1>
+        <div class="controls">
+            <div id="status">Загрузка проектов...</div>
+            <input type="text" id="search-input" placeholder="Поиск проекта..." disabled>
+            <button class="btn-random" id="random-btn">🎲 Случайная игра</button>
+        </div>
+        <div class="projects-grid" id="projects-container"></div>
+    </div>
+    <div class="container" id="game-view">
+        <button class="btn-back" onclick="toggleView(false)">← Назад</button>
+        <h2 id="game-title">Игра</h2>
+        <div class="player-wrapper"><iframe id="scratch-player" frameborder="0" allowfullscreen></iframe></div>
+    </div>
     <script>
         const STUDIO_ID = '51676986';
         const PAGE_LIMIT = 40;
@@ -54,8 +209,11 @@
         }
 
         function enableSearchInput() {
-            document.getElementById('search-input').disabled = false;
-            document.getElementById('random-btn').style.display = 'inline-block';
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.disabled = false;
+                document.getElementById('random-btn').style.display = 'inline-block';
+            }
         }
 
         function displayProjects(projects) {
@@ -90,18 +248,26 @@
             document.getElementById('scratch-player').src = `https://mit.edu/${projectId}/embed`;
         }
 
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            const filteredProjects = projectCollection.filter((project) => {
-                return project.title.toLowerCase().includes(searchTerm);
-            });
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase().trim();
+                    const filteredProjects = projectCollection.filter((project) => {
+                        return project.title.toLowerCase().includes(searchTerm);
+                    });
 
-            displayProjects(filteredProjects);
-        });
+                    displayProjects(filteredProjects);
+                });
+            }
 
-        document.getElementById('random-btn').addEventListener('click', () => {
-            const randomProject = projectCollection[Math.floor(Math.random() * projectCollection.length)];
-            showProject(randomProject.id || randomProject.project_id, randomProject.title);
+            const randomBtn = document.getElementById('random-btn');
+            if (randomBtn) {
+                randomBtn.addEventListener('click', () => {
+                    const randomProject = projectCollection[Math.floor(Math.random() * projectCollection.length)];
+                    showProject(randomProject.id || randomProject.project_id, randomProject.title);
+                });
+            }
         });
 
         fetchStudioProjects();
