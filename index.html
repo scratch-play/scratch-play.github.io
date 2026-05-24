@@ -44,8 +44,7 @@
         let offset = 0;
         let allProjects = [];
 
-        // Используем стабильный CORS-прокси через сервис corsproxy.io
-        const PROXY_URL = 'https://corsproxy.io?';
+        // Делаем прямой запрос к официальному API Scratch без сторонних прокси
         const SCRATCH_API = `https://mit.edu{STUDIO_ID}/projects`;
 
         async function fetchAllProjects() {
@@ -57,10 +56,17 @@
                     statusElement.textContent = `Загрузка... Получено проектов: ${allProjects.length}`;
                     
                     const targetUrl = `${SCRATCH_API}?limit=${LIMIT}&offset=${offset}`;
-                    // Кодируем URL и склеиваем с прокси
-                    const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
                     
-                    if (!response.ok) throw new Error('Ошибка ответа сервера');
+                    // Запрашиваем напрямую у Scratch с параметрами предотвращения кэширования
+                    const response = await fetch(targetUrl, {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Ошибка ответа сервера Scratch API');
                     
                     const data = await response.json();
 
@@ -73,7 +79,7 @@
                 }
 
                 if(allProjects.length === 0) {
-                    statusElement.textContent = 'В студии нет проектов или она пустая.';
+                    statusElement.textContent = 'Проекты не найдены. Убедитесь, что проекты в студии являются публичными (Shared).';
                 } else {
                     statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
                     renderProjects(allProjects);
@@ -83,7 +89,7 @@
                 console.error('Ошибка скрипта:', error);
                 statusElement.style.background = '#ffdddd';
                 statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Не удалось загрузить данные. Откройте консоль браузера (F12), чтобы увидеть ошибку.';
+                statusElement.textContent = 'Не удалось загрузить данные напрямую. Попробуйте обновить страницу через Ctrl+F5.';
             }
         }
 
@@ -101,7 +107,6 @@
                     document.getElementById('game-container').style.display = 'block';
                     document.getElementById('game-title').textContent = project.title;
                     
-                    // Подгружаем плеер Scratch
                     document.getElementById('scratch-iframe').src = `https://mit.edu{project.id}/embed`;
                 };
                 projectsElement.appendChild(projectElement);
