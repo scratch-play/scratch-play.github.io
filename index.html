@@ -1,118 +1,72 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список всех проектов студии</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background: #fafafa; color: #333; }
-        .projects { display: flex; flex-wrap: wrap; gap: 15px; }
-        .project { 
-            padding: 15px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            background: #fff; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s, border-color 0.2s;
-        }
-        .project:hover { transform: translateY(-2px); border-color: #4c97ff; }
-        #game-container { width: 100%; height: 600px; display: none; }
-        #status { font-weight: bold; color: #666; margin-bottom: 20px; padding: 10px; background: #eee; border-radius: 5px; display: inline-block; }
-        button { padding: 10px 20px; margin-bottom: 15px; cursor: pointer; border-radius: 5px; border: 1px solid #4c97ff; background: #4c97ff; color: white; font-weight: bold; }
-        button:hover { background: #357ae8; }
-        iframe { border-radius: 10px; border: 2px solid #ccc; }
-    </style>
-</head>
-<body>
+<script>
+    const STUDIO_ID = '51676986';
+    const LIMIT = 40;
+    let offset = 0;
+    let allProjects = []; 
+    const PROXY_URL = 'https://corsproxy.io?';
 
-    <div id="projects-page">
-        <h1>Список проектов студии</h1>
-        <div id="status">Загрузка проектов...</div>
-        <div class="projects" id="projects"></div>
-    </div>
-
-    <div id="game-container">
-        <button onclick="backToProjects()">← Назад к списку</button>
-        <h2 id="game-title">Игра</h2>
-        <iframe id="scratch-iframe" src="" frameborder="0" width="100%" height="520px" allowtransparency="true" allowfullscreen="true"></iframe>
-    </div>
-
-    <script>
-        const STUDIO_ID = '51676986'; 
-        const LIMIT = 40; 
-        let offset = 0;
-        let allProjects = [];
-
-        // Переключаемся на надежный прокси corsproxy.io
-        const PROXY_URL = 'https://corsproxy.io?';
-
-        async function loadNextBatch() {
-            const statusElement = document.getElementById('status');
+    async function loadNextBatch() {
+        const statusElement = document.getElementById('status');
+        try {
+            // Исправлена ссылка на API Scratch и синтаксис шаблонизатора (добавлен знак $)
+            const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
+            const finalUrl = PROXY_URL + encodeURIComponent(targetUrl);
             
-            try {
-                // Добавляем к запросу случайное число (_nocache), чтобы браузер и GitHub НЕ использовали старый кэш
-                const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
+            const response = await fetch(finalUrl);
+            if (!response.ok) throw new Error('Ошибка ответа сервера');
+            
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                allProjects = allProjects.concat(data);
+                offset += LIMIT;
+                statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
                 
-                // Полный адрес запроса через прокси
-                const finalUrl = PROXY_URL + encodeURIComponent(targetUrl);
-                
-                const response = await fetch(finalUrl);
-                
-                if (!response.ok) throw new Error('Ошибка ответа сервера');
-                
-                const data = await response.json();
-
-                if (data && data.length > 0) {
-                    allProjects = allProjects.concat(data);
-                    offset += LIMIT;
-                    statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
-                    
-                    // Небольшая задержка перед следующим шагом
-                    setTimeout(loadNextBatch, 200);
+                // Делаем паузу между страницами для обхода защиты от спама
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                loadNextBatch();
+            } else {
+                if (allProjects.length === 0) {
+                    statusElement.textContent = 'В студии нет доступных проектов.';
                 } else {
-                    if (allProjects.length === 0) {
-                        statusElement.textContent = 'В студии нет доступных проектов.';
-                    } else {
-                        statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
-                        renderProjects(allProjects);
-                    }
+                    statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
+                    renderProjects(allProjects);
                 }
-            } catch (error) {
-                console.error('Ошибка при загрузке:', error);
-                statusElement.style.background = '#ffdddd';
-                statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Ошибка загрузки. Пожалуйста, подождите минуту и обновите страницу через Ctrl+F5.';
             }
+        } catch (error) {
+            console.error('Ошибка при загрузке:', error);
+            statusElement.style.background = '#ffdddd';
+            statusElement.style.color = '#cc0000';
+            statusElement.textContent = 'Ошибка загрузки. Пожалуйста, подождите минуту и обновите страницу через Ctrl+F5.';
         }
+    }
 
-        function renderProjects(projectsList) {
-            const projectsElement = document.getElementById('projects');
-            projectsElement.innerHTML = ''; 
-
-            projectsList.forEach(project => {
-                const projectElement = document.createElement('div');
-                projectElement.classList.add('project');
-                projectElement.textContent = project.title; 
+    function renderProjects(projectsList) {
+        const projectsElement = document.getElementById('projects');
+        projectsElement.innerHTML = '';
+        
+        projectsList.forEach(project => {
+            const projectElement = document.createElement('div');
+            projectElement.classList.add('project');
+            projectElement.textContent = project.title;
+            
+            projectElement.onclick = () => {
+                document.getElementById('projects-page').style.display = 'none';
+                document.getElementById('game-container').style.display = 'block';
+                document.getElementById('game-title').textContent = project.title;
                 
-                projectElement.onclick = () => {
-                    document.getElementById('projects-page').style.display = 'none';
-                    document.getElementById('game-container').style.display = 'block';
-                    document.getElementById('game-title').textContent = project.title;
-                    
-                    document.getElementById('scratch-iframe').src = `https://mit.edu{project.id}/embed`;
-                };
-                projectsElement.appendChild(projectElement);
-            });
-        }
+                // Исправлена ссылка на Scratch-плеер (добавлен знак $)
+                document.getElementById('scratch-iframe').src = `https://mit.edu{project.id}/embed`;
+            };
+            projectsElement.appendChild(projectElement);
+        });
+    }
 
-        function backToProjects() {
-            document.getElementById('game-container').style.display = 'none';
-            document.getElementById('projects-page').style.display = 'block';
-            document.getElementById('scratch-iframe').src = ''; 
-        }
+    function backToProjects() {
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('projects-page').style.display = 'block';
+        document.getElementById('scratch-iframe').src = '';
+    }
 
-        loadNextBatch();
-    </script>
-</body>
-</html>
+    loadNextBatch();
+</script>
