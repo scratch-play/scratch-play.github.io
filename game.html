@@ -1,18 +1,83 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Игра</title>
+  <meta charset="UTF-8" />
+  <title>Проигрыватель Scratch проекта</title>
+  <style>
+    body, html {
+      margin:0; padding:0; width:100%; height:100%; background:#111;
+      display:flex; align-items: center; justify-content: center; 
+      overflow: hidden;
+      color: white;
+      font-family: Arial, sans-serif;
+      flex-direction: column;
+    }
+    #player-frame {
+      width: 100%;
+      max-width: 960px;
+      height: 540px;
+      border: none;
+      box-shadow: 0 0 40px #5a5a8a;
+      border-radius: 12px;
+    }
+    #error {
+      color: #ff6666;
+      font-weight: bold;
+      margin-top: 20px;
+      font-size: 1.2em;
+      text-align: center;
+    }
+    #title {
+      margin-bottom: 15px;
+      font-size: 1.4em;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
-  <h1>Игра</h1>
-  <iframe src="" frameborder="0" width="100%" height="100%"></iframe>
+  <div id="title">Загрузка...</div>
+  <iframe id="player-frame" allowfullscreen scrolling="no"></iframe>
+  <div id="error"></div>
 
   <script>
-    const urlParams = window.location.hash.substring(1);
-    const iframe = document.querySelector('iframe');
-    iframe.src = `https://scratch.mit.edu/projects/${urlParams}/embed`;
+    (async () => {
+      const iframe = document.getElementById('player-frame');
+      const errorDiv = document.getElementById('error');
+      const titleDiv = document.getElementById('title');
+
+      // Получаем ID проекта из хеша URL (/game#12345678)
+      const projectId = window.location.hash.substring(1);
+
+      if (!projectId) {
+        errorDiv.textContent = 'Ошибка: Не указан ID проекта в адресе.';
+        titleDiv.textContent = 'Ошибка';
+        iframe.style.display = 'none';
+        return;
+      }
+
+      // Загружаем информацию о проекте, чтобы вывести название
+      const infoUrl = 'https://api.scratch.mit.edu/projects/' + projectId;
+
+      try {
+        const response = await fetch(infoUrl);
+        if (!response.ok) throw new Error('Проект не найден');
+        const projectData = await response.json();
+
+        titleDiv.textContent = projectData.title || 'Scratch проект';
+
+        // Строим URL для встраивания сверху
+        // Scratch iframe player с URL вида https://scratch.mit.edu/projects/{id}/embed
+        // Это официальная встраиваемая версия
+        const embedUrl = `https://scratch.mit.edu/projects/${projectId}/embed`;
+
+        iframe.src = embedUrl;
+
+      } catch(e) {
+        errorDiv.textContent = 'Ошибка загрузки проекта: ' + e.message;
+        titleDiv.textContent = 'Ошибка';
+        iframe.style.display = 'none';
+      }
+    })();
   </script>
 </body>
 </html>
