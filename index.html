@@ -44,18 +44,20 @@
         let offset = 0;
         let allProjects = [];
 
-        // Используем обертку allorigins для обхода CORS ограничений Scratch API
-        const PROXY_URL = 'https://allorigins.win';
+        // Переключаемся на надежный прокси corsproxy.io
+        const PROXY_URL = 'https://corsproxy.io?';
 
         async function loadNextBatch() {
             const statusElement = document.getElementById('status');
             
             try {
-                // Корректный адрес официального API Scratch
-                const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}`;
+                // Добавляем к запросу случайное число (_nocache), чтобы браузер и GitHub НЕ использовали старый кэш
+                const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
                 
-                // Делаем запрос через прокси-сервер
-                const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
+                // Полный адрес запроса через прокси
+                const finalUrl = PROXY_URL + encodeURIComponent(targetUrl);
+                
+                const response = await fetch(finalUrl);
                 
                 if (!response.ok) throw new Error('Ошибка ответа сервера');
                 
@@ -66,10 +68,9 @@
                     offset += LIMIT;
                     statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
                     
-                    // Рекурсивно запрашиваем следующую порцию данных
-                    await loadNextBatch();
+                    // Небольшая задержка перед следующим шагом
+                    setTimeout(loadNextBatch, 200);
                 } else {
-                    // Когда массив пришел пустой — загрузка завершена
                     if (allProjects.length === 0) {
                         statusElement.textContent = 'В студии нет доступных проектов.';
                     } else {
@@ -81,7 +82,7 @@
                 console.error('Ошибка при загрузке:', error);
                 statusElement.style.background = '#ffdddd';
                 statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Ошибка загрузки данных. Пожалуйста, обновите страницу через Ctrl+F5.';
+                statusElement.textContent = 'Ошибка загрузки. Пожалуйста, подождите минуту и обновите страницу через Ctrl+F5.';
             }
         }
 
@@ -99,7 +100,6 @@
                     document.getElementById('game-container').style.display = 'block';
                     document.getElementById('game-title').textContent = project.title;
                     
-                    // Встраиваем iframe плеера Scratch
                     document.getElementById('scratch-iframe').src = `https://mit.edu{project.id}/embed`;
                 };
                 projectsElement.appendChild(projectElement);
@@ -112,7 +112,6 @@
             document.getElementById('scratch-iframe').src = ''; 
         }
 
-        // Запуск процесса загрузки
         loadNextBatch();
     </script>
 </body>
