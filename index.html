@@ -28,7 +28,7 @@
 
     <div id="projects-page">
         <h1>Список проектов студии</h1>
-        <div id="status">Инициализация загрузки через прокси...</div>
+        <div id="status">Загрузка проектов напрямую из Scratch...</div>
         <div class="projects" id="projects"></div>
     </div>
 
@@ -44,66 +44,50 @@
         let offset = 0;
         let allProjects = [];
 
-        // Список резервных CORS-прокси (если один упадет — сработает другой)
-        const PROXIES = [
-            (url) => `https://corsproxy.io{encodeURIComponent(url)}`,
-            (url) => `https://allorigins.win{encodeURIComponent(url)}`,
-            (url) => `https://freeboard.io{url}`
-        ];
-        
-        let currentProxyIndex = 0;
-
-        async function fetchWithRetry(url) {
-            // Пробуем поочередно каждый прокси из списка
-            while (currentProxyIndex < PROXIES.length) {
-                try {
-                    const proxiedUrl = PROXIES[currentProxyIndex](url);
-                    const response = await fetch(proxiedUrl);
-                    if (response.ok) {
-                        return await response.json();
-                    }
-                } catch (e) {
-                    console.warn(`Прокси №${currentProxyIndex} не сработал, переключаемся...`);
-                }
-                currentProxyIndex++; // Переход к следующему прокси
-            }
-            throw new Error("Все доступные прокси-серверы перегружены или недоступны.");
-        }
-
-        async function fetchAllProjects() {
+        // Глобальная функция, которую вызовет ответ от Scratch API
+        window.handleScratchData = function(data) {
             const statusElement = document.getElementById('status');
-            let hasMore = true;
+            
+            // Удаляем временный тег скрипта, чтобы не засорять страницу
+            const oldScript = document.getElementById('scratch-jsonp-script');
+            if (oldScript) oldScript.remove();
 
-            try {
-                while (hasMore) {
-                    statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
-                    
-                    const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}`;
-                    
-                    // Запрашиваем через систему умных прокси
-                    const data = await fetchWithRetry(targetUrl);
-
-                    if (data && data.length > 0) {
-                        allProjects = allProjects.concat(data);
-                        offset += LIMIT; 
-                    } else {
-                        hasMore = false; 
-                    }
-                }
-
+            if (data && data.length > 0) {
+                allProjects = allProjects.concat(data);
+                offset += LIMIT;
+                statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
+                
+                // Делаем паузу в 100мс перед следующим запросом, чтобы Scratch не заблокировал за спам
+                setTimeout(loadNextBatch, 100);
+            } else {
+                // Если данные закончились
                 if(allProjects.length === 0) {
                     statusElement.textContent = 'В студии нет доступных проектов.';
                 } else {
                     statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
                     renderProjects(allProjects);
                 }
+            }
+        };
 
-            } catch (error) {
-                console.error('Ошибка:', error);
+        function loadNextBatch() {
+            // Формируем прямую ссылку к API Scratch, добавив параметр &callback=
+            const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&callback=handleScratchData`;
+            
+            // Создаем тег <script>, браузер загрузит его без проверки CORS-политики
+            const script = document.createElement('script');
+            script.id = 'scratch-jsonp-script';
+            script.src = targetUrl;
+            
+            // Если случилась критическая ошибка загрузки скрипта
+            script.onerror = function() {
+                const statusElement = document.getElementById('status');
                 statusElement.style.background = '#ffdddd';
                 statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Ошибка обхода CORS-защиты. Пожалуйста, обновите страницу чуть позже.';
-            }
+                statusElement.textContent = 'Ошибка прямого подключения к Scratch. Перезагрузите страницу.';
+            };
+
+            document.body.appendChild(script);
         }
 
         function renderProjects(projectsList) {
@@ -132,7 +116,8 @@
             document.getElementById('scratch-iframe').src = ''; 
         }
 
-        fetchAllProjects();
+        // Запуск первой итерации
+        loadNextBatch();
     </script>
 </body>
 </html>
