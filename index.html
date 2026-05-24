@@ -2,73 +2,24 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Проекты студии Scratch (чистый фронтенд)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Студия Scratch в iframe</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #222; color: white; margin: 20px; }
-    h1 { text-align: center; }
-    .grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
-    .card {
-      background: #333;
-      border-radius: 8px;
-      width: 200px;
-      cursor: pointer;
-      box-shadow: 0 0 10px #000;
-      transition: transform 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      background-color: #121212;
+      color: #eee;
+      font-family: Arial, sans-serif;
     }
-    .card:hover {
-      transform: scale(1.05);
-    }
-    .card img {
-      width: 100%;
-      border-radius: 8px 8px 0 0;
-    }
-    .title {
-      padding: 8px;
-      font-size: 1em;
-      text-align: center;
+    iframe {
+      border: none;
+      width: 100vw;
+      height: 100vh;
+      display: block;
     }
   </style>
 </head>
 <body>
-
-<h1>Проекты студии Scratch</h1>
-<div id="projects" class="grid">Загрузка...</div>
-
-<script>
-  async function loadProjects() {
-    try {
-      const res = await fetch('https://api.scratch.mit.edu/studios/51676986/projects?limit=40');
-      if (!res.ok) throw new Error('Ошибка API ' + res.status);
-      const projects = await res.json();
-
-      const container = document.getElementById('projects');
-      container.innerHTML = '';
-
-      projects.forEach(proj => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        
-        // В API у проекта есть project.id, project.title, project.image
-        card.innerHTML = `
-          <img src="https://cdn2.scratch.mit.edu/get_image/project/${proj.id}_480x360.png" alt="${proj.title}" />
-          <div class="title">${proj.title}</div>
-        `;
-        card.onclick = () => {
-          window.location.href = `/game#${proj.id}`;
-        };
-        container.appendChild(card);
-      });
-    } catch (e) {
-      document.getElementById('projects').textContent = 'Ошибка загрузки проектов: ' + e.message;
-      console.error(e);
-    }
-  }
-
-  loadProjects();
-</script>
-
+  <iframe src="https://scratch.mit.edu/studios/51676986/" allowfullscreen></iframe>
 </body>
 </html>
