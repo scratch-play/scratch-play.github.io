@@ -60,7 +60,7 @@
     async function fetchStudioProjects() {
         try {
             // Исправленный URL Scratch API
-            const apiTarget = `https://mit.edu{STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${offset}`;
+            const apiTarget = `https://api.scratch.mit.edu${STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${offset}`;
             const response = await fetch(PROXY_URL + encodeURIComponent(apiTarget));
             
             if (!response.ok) throw new Error("Ошибка сети");
