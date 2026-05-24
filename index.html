@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список проектов студии</title>
+    <title>Список всех проектов студии</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background: #fafafa; color: #333; }
         .projects { display: flex; flex-wrap: wrap; gap: 15px; }
@@ -28,7 +28,7 @@
 
     <div id="projects-page">
         <h1>Список проектов студии</h1>
-        <div id="status">Инициализация загрузки...</div>
+        <div id="status">Инициализация загрузки через прокси...</div>
         <div class="projects" id="projects"></div>
     </div>
 
@@ -44,8 +44,31 @@
         let offset = 0;
         let allProjects = [];
 
-        // Делаем прямой запрос к официальному API Scratch без сторонних прокси
-        const SCRATCH_API = `https://mit.edu{STUDIO_ID}/projects`;
+        // Список резервных CORS-прокси (если один упадет — сработает другой)
+        const PROXIES = [
+            (url) => `https://corsproxy.io{encodeURIComponent(url)}`,
+            (url) => `https://allorigins.win{encodeURIComponent(url)}`,
+            (url) => `https://freeboard.io{url}`
+        ];
+        
+        let currentProxyIndex = 0;
+
+        async function fetchWithRetry(url) {
+            // Пробуем поочередно каждый прокси из списка
+            while (currentProxyIndex < PROXIES.length) {
+                try {
+                    const proxiedUrl = PROXIES[currentProxyIndex](url);
+                    const response = await fetch(proxiedUrl);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (e) {
+                    console.warn(`Прокси №${currentProxyIndex} не сработал, переключаемся...`);
+                }
+                currentProxyIndex++; // Переход к следующему прокси
+            }
+            throw new Error("Все доступные прокси-серверы перегружены или недоступны.");
+        }
 
         async function fetchAllProjects() {
             const statusElement = document.getElementById('status');
@@ -53,22 +76,12 @@
 
             try {
                 while (hasMore) {
-                    statusElement.textContent = `Загрузка... Получено проектов: ${allProjects.length}`;
+                    statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
                     
-                    const targetUrl = `${SCRATCH_API}?limit=${LIMIT}&offset=${offset}`;
+                    const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}`;
                     
-                    // Запрашиваем напрямую у Scratch с параметрами предотвращения кэширования
-                    const response = await fetch(targetUrl, {
-                        method: 'GET',
-                        mode: 'cors',
-                        headers: {
-                            'Cache-Control': 'no-cache'
-                        }
-                    });
-                    
-                    if (!response.ok) throw new Error('Ошибка ответа сервера Scratch API');
-                    
-                    const data = await response.json();
+                    // Запрашиваем через систему умных прокси
+                    const data = await fetchWithRetry(targetUrl);
 
                     if (data && data.length > 0) {
                         allProjects = allProjects.concat(data);
@@ -79,17 +92,17 @@
                 }
 
                 if(allProjects.length === 0) {
-                    statusElement.textContent = 'Проекты не найдены. Убедитесь, что проекты в студии являются публичными (Shared).';
+                    statusElement.textContent = 'В студии нет доступных проектов.';
                 } else {
                     statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
                     renderProjects(allProjects);
                 }
 
             } catch (error) {
-                console.error('Ошибка скрипта:', error);
+                console.error('Ошибка:', error);
                 statusElement.style.background = '#ffdddd';
                 statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Не удалось загрузить данные напрямую. Попробуйте обновить страницу через Ctrl+F5.';
+                statusElement.textContent = 'Ошибка обхода CORS-защиты. Пожалуйста, обновите страницу чуть позже.';
             }
         }
 
