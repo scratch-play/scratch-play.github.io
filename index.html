@@ -2,100 +2,104 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Студия Scratch Projects через прокси</title>
+  <title>Проекты студии Scratch</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #121212;
-      color: #eee;
-      margin: 0; padding: 20px;
-      display: flex; flex-wrap: wrap; justify-content: center;
-      gap: 15px;
-    }
-    .card {
-      background: #252525;
-      border-radius: 8px;
-      width: 200px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-      transition: transform 0.2s, box-shadow 0.2s;
-      overflow: hidden;
+      background: #fafafa;
+      padding: 20px;
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
+      justify-content: center;
     }
-    .card:hover {
+    .project-card {
+      width: 250px;
+      margin: 10px;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.15s ease-in-out;
+    }
+    .project-card:hover {
       transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(255,255,255,0.3);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
     }
-    .thumb {
+    .project-thumb {
       width: 100%;
-      height: 140px;
-      object-fit: cover;
-      background: #444;
+      display: block;
     }
-    .title {
+    .project-info {
       padding: 10px;
+    }
+    .project-title {
       font-weight: bold;
-      font-size: 16px;
-      flex-grow: 1;
-      color: #fff;
-      text-align: center;
+      font-size: 18px;
+      margin: 5px 0;
+      color: #333;
+      text-decoration: none;
+      display: block;
+    }
+    .project-author {
+      color: #555;
+      font-size: 14px;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
-  <script>
-    const studioId = 51676986;
 
-    // Используем прокси для запроса
-    const apiURL = `https://scratch-play-proxy.vercel.app/api/studios/${studioId}/projects`;
+<div id="projects-container">Загрузка проектов...</div>
 
-    fetch(apiURL)
-      .then(res => {
-        if (!res.ok) throw new Error('Ошибка запроса к прокси API');
-        return res.json();
-      })
-      .then(projects => {
-        if (!Array.isArray(projects)) throw new Error('Не получили список проектов');
-        projects.forEach(project => {
-          createProjectCard(project);
-        });
-      })
-      .catch(err => {
-        document.body.innerHTML = `<p style="color: red; text-align:center;">Ошибка загрузки проектов: ${err.message}</p>`;
-        console.error(err);
+<script>
+  const container = document.getElementById('projects-container');
+  
+  async function loadProjects() {
+    try {
+      // Используем прокси-API, чтобы получить json проектов в студии
+      const studioId = '51676986';
+      const url = `https://scratch-play-proxy.vercel.app/studios/${studioId}/projects?limit=40&offset=0`;
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Ошибка при загрузке проектов');
+
+      const data = await res.json();
+      if (!data.projects || data.projects.length === 0) {
+        container.textContent = 'Проекты не найдены.';
+        return;
+      }
+
+      container.textContent = '';
+      
+      data.projects.forEach(proj => {
+        // Данные: proj.id, proj.title, proj.image (обложка), proj.author.username
+        
+        const card = document.createElement('a');
+        card.className = 'project-card';
+        card.href = `/game#${proj.id}`;
+        card.target = '_blank'; // открыть в новой вкладке — по желанию
+        card.rel = 'noopener noreferrer';
+
+        card.innerHTML = `
+          <img class="project-thumb" src="${proj.image}" alt="${proj.title}" />
+          <div class="project-info">
+            <span class="project-title">${proj.title}</span>
+            <span class="project-author">автор: ${proj.author.username}</span>
+          </div>
+        `;
+
+        container.appendChild(card);
       });
-
-    function createProjectCard(project) {
-      const id = project.id;
-      const title = project.title || 'Без названия';
-
-      // Превью с офф.я хранилища — лучше так, proxy не нужен на картинки
-      const thumbnail = `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
-
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.title = title;
-
-      card.onclick = () => {
-        window.location.href = `/game#${id}`;
-      };
-
-      const img = document.createElement('img');
-      img.className = 'thumb';
-      img.src = thumbnail;
-      img.alt = title;
-      img.loading = 'lazy';
-
-      const titleDiv = document.createElement('div');
-      titleDiv.className = 'title';
-      titleDiv.textContent = title;
-
-      card.appendChild(img);
-      card.appendChild(titleDiv);
-
-      document.body.appendChild(card);
+      
+    } catch (e) {
+      container.textContent = 'Ошибка загрузки проектов: ' + e.message;
+      console.error(e);
     }
-  </script>
+  }
+
+  loadProjects();
+</script>
+
 </body>
 </html>
