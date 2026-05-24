@@ -1,104 +1,145 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Проекты студии Scratch</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fafafa;
-      padding: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .project-card {
-      width: 250px;
-      margin: 10px;
-      border-radius: 8px;
-      background: white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      cursor: pointer;
-      overflow: hidden;
-      transition: transform 0.15s ease-in-out;
-    }
-    .project-card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-    }
-    .project-thumb {
-      width: 100%;
-      display: block;
-    }
-    .project-info {
-      padding: 10px;
-    }
-    .project-title {
-      font-weight: bold;
-      font-size: 18px;
-      margin: 5px 0;
-      color: #333;
-      text-decoration: none;
-      display: block;
-    }
-    .project-author {
-      color: #555;
-      font-size: 14px;
-      text-decoration: none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Проекты студии Scratch с мультипрокси</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fafafa;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .project-card {
+    width: 250px;
+    margin: 10px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.15s ease-in-out;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .project-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+  }
+  .project-thumb {
+    width: 100%;
+    display: block;
+  }
+  .project-info {
+    padding: 10px;
+  }
+  .project-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin: 5px 0;
+    color: #333;
+    text-decoration: none;
+    display: block;
+  }
+  .project-author {
+    color: #555;
+    font-size: 14px;
+    text-decoration: none;
+  }
+</style>
 </head>
 <body>
 
 <div id="projects-container">Загрузка проектов...</div>
 
 <script>
+  const studioApiUrl = 'https://api.scratch.mit.edu/studios/51676986/projects?limit=40&offset=0';
+
+  // Наши прокси — разные, не очень популярные, проверяем их поочередно
+  // Формат: {url: прокси_адрес_с_плейсхолдером_API, format: 'direct'|'allorigins'|'thingproxy'}
+  const proxyList = [
+    {url: 'https://api.allorigins.win/raw?url=', format: 'raw'},            // отдает напрямую тело (json)
+    {url: 'https://thingproxy.freeboard.io/fetch/', format: 'direct'},     // просто проксирует и отдает json (direct) 
+    {url: 'https://api.allorigins.win/get?url=', format: 'allorigins'},    // обертка {contents: "json-текст"}
+    {url: 'https://api.codetabs.com/v1/proxy?quest=', format: 'direct'},   // проксирует напрямую
+    {url: 'https://cors.bridged.cc/', format: 'direct'},                   // еще один прокси
+  ];
+
   const container = document.getElementById('projects-container');
-  
-  async function loadProjects() {
+
+  async function tryFetchWithProxy(proxy) {
+    const urlToFetch = proxy.url + encodeURIComponent(studioApiUrl);
+
     try {
-      // Используем прокси-API, чтобы получить json проектов в студии
-      const studioId = '51676986';
-      const url = `https://scratch-play-proxy.vercel.app/studios/${studioId}/projects?limit=40&offset=0`;
+      const response = await fetch(urlToFetch);
+      if (!response.ok) throw new Error(`Статус ${response.status}`);
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Ошибка при загрузке проектов');
-
-      const data = await res.json();
-      if (!data.projects || data.projects.length === 0) {
-        container.textContent = 'Проекты не найдены.';
-        return;
+      if(proxy.format === 'allorigins') {
+        // Функция: ответ обернут в JSON {contents: "json-текст"}
+        const wrapper = await response.json();
+        try {
+          return JSON.parse(wrapper.contents);
+        } catch(e) {
+          throw new Error('Не удалось распарсить JSON из contents');
+        }
+      } else if (proxy.format === 'raw' || proxy.format === 'direct') {
+        // Отдаем напрямую JSON
+        return await response.json();
+      } else {
+        throw new Error('Неизвестный формат прокси');
       }
-
-      container.textContent = '';
-      
-      data.projects.forEach(proj => {
-        // Данные: proj.id, proj.title, proj.image (обложка), proj.author.username
-        
-        const card = document.createElement('a');
-        card.className = 'project-card';
-        card.href = `/game#${proj.id}`;
-        card.target = '_blank'; // открыть в новой вкладке — по желанию
-        card.rel = 'noopener noreferrer';
-
-        card.innerHTML = `
-          <img class="project-thumb" src="${proj.image}" alt="${proj.title}" />
-          <div class="project-info">
-            <span class="project-title">${proj.title}</span>
-            <span class="project-author">автор: ${proj.author.username}</span>
-          </div>
-        `;
-
-        container.appendChild(card);
-      });
-      
-    } catch (e) {
-      container.textContent = 'Ошибка загрузки проектов: ' + e.message;
-      console.error(e);
+    } catch(err) {
+      console.warn(`Прокси ${proxy.url} не сработал: ${err.message}`);
+      throw err;
     }
   }
 
+  async function loadProjects() {
+    container.textContent = 'Загрузка проектов...';
+    for(let i=0; i < proxyList.length; i++) {
+      const proxy = proxyList[i];
+      try {
+        const data = await tryFetchWithProxy(proxy);
+
+        if (data.projects && data.projects.length > 0) {
+          renderProjects(data.projects);
+          return;
+        } else {
+          console.warn(`Прокси ${proxy.url} вернул пустой список проектов`);
+        }
+      } catch(e) {
+        // пробуем следующий
+      }
+    }
+    container.textContent = 'Не удалось загрузить проекты с помощью доступных прокси.';
+  }
+
+  function renderProjects(projects) {
+    container.textContent = '';
+    projects.forEach(proj => {
+      const card = document.createElement('a');
+      card.className = 'project-card';
+      card.href = `/game#${proj.id}`;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+
+      card.innerHTML = `
+        <img class="project-thumb" src="${proj.image}" alt="${proj.title}" />
+        <div class="project-info">
+          <span class="project-title">${proj.title}</span>
+          <span class="project-author">автор: ${proj.author.username}</span>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
   loadProjects();
+
 </script>
 
 </body>
