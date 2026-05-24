@@ -46,13 +46,13 @@
     </div>
     <script>
         const STUDIO_ID = '51676986', PAGE_LIMIT = 40;
-        const PROXY_URL = 'https://vercel.app';
+        const PROXY_URL = 'https://scratch-play-proxy.vercel.app/';
         let offset = 0, projectCollection = [];
 
         async function fetchStudioProjects() {
             const statusLabel = document.getElementById('status');
             try {
-                const apiTarget = `https://mit.edu{STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
+                const apiTarget = `https://mit.edu/${STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
                 const response = await fetch(PROXY_URL + encodeURIComponent(apiTarget));
                 if (!response.ok) throw new Error();
                 const data = await response.json();
@@ -87,13 +87,13 @@
                 const card = document.createElement('div');
                 card.className = 'project-card';
                 const pId = item.id || item.project_id;
-                const imgUrl = `https://mit.edu{pId}_282x218.png`;
+                const imgUrl = `https://mit.edu/${pId}_282x218.png`;
                 
                 card.innerHTML = `<img src="${imgUrl}" loading="lazy"><div class="project-card-title">${item.title}</div>`;
                 card.onclick = () => { 
                     toggleView(true); 
                     document.getElementById('game-title').textContent = item.title; 
-                    document.getElementById('scratch-player').src = `https://mit.edu{pId}/embed`; 
+                    document.getElementById('scratch-player').src = `https://mit.edu/${pId}/embed`; 
                 };
                 container.appendChild(card);
             });
@@ -105,7 +105,7 @@
             const pId = randomProject.id || randomProject.project_id;
             toggleView(true);
             document.getElementById('game-title').textContent = randomProject.title;
-            document.getElementById('scratch-player').src = `https://mit.edu{pId}/embed`;
+            document.getElementById('scratch-player').src = `https://mit.edu/${pId}/embed`;
         }
 
         function toggleView(showGame) {
