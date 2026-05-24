@@ -1,173 +1,73 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<title>Проекты Scratch студии - Быстрая загрузка</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #121227;
-    color: #eee;
-    margin: 0; padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  h1 {
-    margin-bottom: 16px;
-  }
-  #container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
-    gap: 12px;
-    width: 100%;
-    max-width: 960px;
-  }
-  .card {
-    background: #1e1e3f;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    color: #eee;
-    box-shadow: 0 3px 6px rgb(34 41 63 / 0.5);
-    display: flex;
-    flex-direction: column;
-    text-decoration: none;
-    transition: transform 0.15s ease;
-  }
-  .card:hover {
-    transform: scale(1.05);
-  }
-  .card img {
-    width: 100%;
-    height: 100px;
-    object-fit: cover;
-    background: #111;
-    display: block;
-  }
-  .title {
-    padding: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  #loadMoreBtn {
-    margin: 20px;
-    padding: 10px 24px;
-    font-size: 16px;
-    background-color: #4060f8;
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.3s ease;
-    min-width: 140px;
-  }
-  #loadMoreBtn:disabled {
-    background-color: #666;
-    cursor: not-allowed;
-  }
-  #loadMoreBtn:hover:not(:disabled) {
-    background-color: #2e4add;
-  }
-  .error {
-    margin-top: 20px;
-    font-weight: bold;
-    color: #f55;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Проекты студии Scratch (чистый фронтенд)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #222; color: white; margin: 20px; }
+    h1 { text-align: center; }
+    .grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+    .card {
+      background: #333;
+      border-radius: 8px;
+      width: 200px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #000;
+      transition: transform 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .card img {
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+    }
+    .title {
+      padding: 8px;
+      font-size: 1em;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
 <h1>Проекты студии Scratch</h1>
-
-<div id="container"></div>
-<button id="loadMoreBtn">Загрузить ещё</button>
-<div class="error" id="errorMsg" style="display:none;"></div>
+<div id="projects" class="grid">Загрузка...</div>
 
 <script>
-  const container = document.getElementById('container');
-  const loadMoreBtn = document.getElementById('loadMoreBtn');
-  const errorMsg = document.getElementById('errorMsg');
-
-  const studioId = 51676986;
-  const limit = 20;
-  let offset = 0;
-  let loading = false;
-  let allLoaded = false;
-
-  async function fetchProjects() {
-    if (loading || allLoaded) return;
-    loading = true;
-    loadMoreBtn.disabled = true;
-    loadMoreBtn.textContent = "Загрузка...";
-    errorMsg.style.display = 'none';
-
-    const apiUrl = `https://api.scratch.mit.edu/studios/${studioId}/projects?limit=${limit}&offset=${offset}`;
-    const proxyUrl = 'https://cors.bridged.cc/' + apiUrl;
-
+  async function loadProjects() {
     try {
-      const response = await fetch(proxyUrl, {cache: "no-store"});
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const res = await fetch('https://api.scratch.mit.edu/studios/51676986/projects?limit=40');
+      if (!res.ok) throw new Error('Ошибка API ' + res.status);
+      const projects = await res.json();
 
-      const projects = await response.json();
+      const container = document.getElementById('projects');
+      container.innerHTML = '';
 
-      if (!Array.isArray(projects) || projects.length === 0) {
-        if (offset === 0) {
-          errorMsg.textContent = "В студии нет проектов.";
-          errorMsg.style.display = "block";
-        }
-        allLoaded = true;
-        loadMoreBtn.style.display = "none";
-        return;
-      }
-
-      for (const project of projects) {
-        const card = document.createElement('a');
+      projects.forEach(proj => {
+        const card = document.createElement('div');
         card.className = 'card';
-        card.href = `/game#${project.id}`;
-        card.title = project.title;
-        card.target = '_self';
-
-        const img = document.createElement('img');
-        img.src = `https://cdn2.scratch.mit.edu/get_image/project/${project.id}_480x360.png`;
-        img.alt = project.title;
-        img.loading = 'lazy';
-
-        const title = document.createElement('div');
-        title.className = 'title';
-        title.textContent = project.title;
-
-        card.appendChild(img);
-        card.appendChild(title);
+        
+        // В API у проекта есть project.id, project.title, project.image
+        card.innerHTML = `
+          <img src="https://cdn2.scratch.mit.edu/get_image/project/${proj.id}_480x360.png" alt="${proj.title}" />
+          <div class="title">${proj.title}</div>
+        `;
+        card.onclick = () => {
+          window.location.href = `/game#${proj.id}`;
+        };
         container.appendChild(card);
-      }
-
-      offset += projects.length;
-
-      if (projects.length < limit) {
-        allLoaded = true;
-        loadMoreBtn.style.display = "none";
-      }
+      });
     } catch (e) {
-      errorMsg.textContent = `Ошибка при загрузке: ${e.message}`;
-      errorMsg.style.display = "block";
-      if (offset === 0) loadMoreBtn.style.display = "none";
-    } finally {
-      loading = false;
-      if (!allLoaded) {
-        loadMoreBtn.disabled = false;
-        loadMoreBtn.textContent = "Загрузить ещё";
-      }
+      document.getElementById('projects').textContent = 'Ошибка загрузки проектов: ' + e.message;
+      console.error(e);
     }
   }
 
-  loadMoreBtn.addEventListener('click', fetchProjects);
-
-  fetchProjects();
+  loadProjects();
 </script>
 
 </body>
