@@ -3,264 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список всех проектов студии</title>
+    <title>Игровая студия Scratch</title>
     <style>
+        :root {
+            --bg-color: #fafafa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+            --accent-color: #4c97ff;
+            --accent-hover: #357ae8;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background: #fafafa;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
 
-        .header-controls {
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
             gap: 15px;
             margin-bottom: 25px;
+            align-items: center;
         }
 
-        /* Адаптивная строка поиска */
+        #status {
+            font-weight: bold;
+            padding: 10px 15px;
+            background-color: #eeeeee;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
         #search-input {
-            width: 100%;
+            flex: 1;
+            min-width: 200px;
             max-width: 400px;
             padding: 12px 15px;
-            font-size: 16px;
-            border: 2px solid #ddd;
+            font-size: 15px;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
-            box-sizing: border-box;
+            outline: none;
             transition: border-color 0.2s;
         }
+
         #search-input:focus {
-            border-color: #4c97ff;
-            outline: none;
+            border-color: var(--accent-color);
         }
 
-        /* Адаптивная CSS-сетка проектов */
-        .projects {
+        #search-input:disabled {
+            background-color: #eaeaea;
+            cursor: not-allowed;
+        }
+
+        .btn-random {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            color: white;
+            background-color: #2ecc71;
+            border: 1px solid #2ecc71;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            display: none;
+        }
+
+        .btn-random:hover {
+            background-color: #27ae60;
+            border-color: #27ae60;
+        }
+
+        .projects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 20px;
         }
 
-        .project {
-            border: 1px solid #ddd;
-            border-radius: 8px;
+        .project-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
             cursor: pointer;
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
-        .project:hover {
+
+        .project-card:hover {
             transform: translateY(-4px);
-            border-color: #4c97ff;
-            box-shadow: 0 5px 15px rgba(76,151,255,0.2);
+            border-color: var(--accent-color);
+            box-shadow: 0 6px 12px rgba(76,151,255,0.15);
         }
-        .project img {
+
+        .project-card img {
             width: 100%;
-            height: auto;
             aspect-ratio: 4 / 3;
             object-fit: cover;
-            background: #eee;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
-        .project-info {
+
+        .project-card-info {
             padding: 12px;
             flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .project-title {
+
+        .project-card-title {
             font-size: 14px;
-            font-weight: bold;
+            font-weight: 600;
             text-align: center;
-            word-break: break-word;
             line-height: 1.4;
+            word-break: break-word;
         }
 
-        #game-container {
-            width: 100%;
+        #game-view {
             display: none;
         }
-        #status {
-            font-weight: bold;
-            color: #666;
-            padding: 10px 15px;
-            background: #eee;
-            border-radius: 5px;
-            display: inline-block;
-            align-self: flex-start;
-        }
-        button {
+
+        button.btn-back {
             padding: 10px 20px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             cursor: pointer;
-            border-radius: 5px;
-            border: 1px solid #4c97ff;
-            background: #4c97ff;
-            color: white;
+            border-radius: 6px;
+            border: 1px solid var(--accent-color);
+            background-color: var(--accent-color);
+            color: #ffffff;
             font-weight: bold;
             font-size: 14px;
-        }
-        button:hover {
-            background: #357ae8;
+            transition: background-color 0.2s;
         }
 
-        /* Адаптивный контейнер для игрового окна (16:9) */
-        .iframe-wrapper {
+        button.btn-back:hover {
+            background-color: var(--accent-hover);
+        }
+
+        #game-title {
+            margin: 0 0 20px 0;
+            font-size: 22px;
+        }
+
+        .player-wrapper {
             position: relative;
             width: 100%;
             padding-top: 56.25%;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 2px solid #ccc;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
-        .iframe-wrapper iframe {
+
+        .player-wrapper iframe {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background-color: #000000;
         }
 
-        /* Оптимизация сетки под мобильные телефоны */
         @media (max-width: 480px) {
-            body { padding: 10px; }
-            .projects { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-            .project-title { font-size: 12px; }
-            .project-info { padding: 8px; }
+            body { padding: 12px; }
+            .controls { gap: 10px; }
+            #search-input { min-width: 100%; order: 2; }
+            .btn-random { width: 100%; order: 3; text-align: center; }
+            .projects-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 12px; }
+            .project-card-title { font-size: 13px; }
+            .project-card-info { padding: 8px; }
+            h1 { font-size: 22px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="container" id="projects-page">
+    <div class="container" id="catalog-view">
         <h1>Список проектов студии</h1>
-        <div class="header-controls">
+        <div class="controls">
             <div id="status">Загрузка проектов...</div>
             <input type="text" id="search-input" placeholder="Поиск проекта по названию..." disabled>
+            <button class="btn-random" id="random-btn" onclick="playRandomGame()">🎲 Случайная игра</button>
         </div>
-        <div class="projects" id="projects"></div>
+        <div class="projects-grid" id="projects-container"></div>
     </div>
 
-    <div class="container" id="game-container">
-        <button onclick="backToProjects()">← Назад к списку</button>
+    <div class="container" id="game-view">
+        <button class="btn-back" onclick="closeGame()">← Назад к списку</button>
         <h2 id="game-title">Игра</h2>
-        <div class="iframe-wrapper">
-            <iframe id="scratch-iframe" src="" frameborder="0" allowtransparency="true" allowfullscreen="true"></iframe>
+        <div class="player-wrapper">
+            <iframe id="scratch-player" src="" frameborder="0" allowtransparency="true" allowfullscreen="true"></iframe>
         </div>
     </div>
 
     <script>
         const STUDIO_ID = '51676986';
-        const LIMIT = 40;
-        let offset = 0;
-        let allProjects = []; 
-
-        // Ваша личная рабочая ссылка на прокси-сервер Vercel
+        const PAGE_LIMIT = 40;
         const PROXY_URL = 'https://vercel.app';
+        
+        let currentOffset = 0;
+        let projectCollection = [];
 
-        async function loadNextBatch() {
-            const statusElement = document.getElementById('status');
+        async function fetchStudioProjects() {
+            const statusLabel = document.getElementById('status');
             try {
-                // Полностью исправленный и корректный URL для обращения к API Scratch
-                const targetUrl = `https://scratch.mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
-                const finalUrl = PROXY_URL + encodeURIComponent(targetUrl);
-                
-                const response = await fetch(finalUrl);
-                if (!response.ok) throw new Error(`Сервер вернул статус ${response.status}`);
-                
+                const apiTarget = `https://mit.edu{STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${currentOffset}&_nocache=${Date.now()}`;
+                const proxyRequestUrl = PROXY_URL + encodeURIComponent(apiTarget);
+
+                const response = await fetch(proxyRequestUrl);
+                if (!response.ok) throw new Error(`Код ответа сервера: ${response.status}`);
+
                 const data = await response.json();
-                
+
                 if (data && data.length > 0) {
-                    allProjects = allProjects.concat(data);
-                    offset += LIMIT;
-                    statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
+                    projectCollection = projectCollection.concat(data);
+                    currentOffset += PAGE_LIMIT;
+                    statusLabel.textContent = `Загрузка... Получено проектов: ${projectCollection.length}`;
                     
-                    // Небольшая задержка перед следующим шагом
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    loadNextBatch();
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                    fetchStudioProjects();
                 } else {
-                    if (allProjects.length === 0) {
-                        statusElement.textContent = 'В студии нет доступных проектов.';
+                    if (projectCollection.length === 0) {
+                        statusLabel.textContent = 'В этой студии нет доступных проектов.';
                     } else {
-                        statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
-                        enableSearch();
-                        renderProjects(allProjects);
+                        statusLabel.textContent = `Успешно загружено проектов: ${projectCollection.length}`;
+                        initControls();
+                        displayProjects(projectCollection);
                     }
                 }
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
-                statusElement.style.background = '#ffdddd';
-                statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Ошибка загрузки. Проверьте статус вашего прокси-сервера или откройте консоль браузера (F12).';
+            } catch (err) {
+                console.error('Ошибка исполнения запроса:', err);
+                statusLabel.style.backgroundColor = '#ffeef0';
+                statusLabel.style.color = '#d9383a';
+                statusLabel.textContent = 'Ошибка получения данных. Перезагрузите страницу с помощью Ctrl+F5.';
             }
         }
 
-        // Активация «живого» поиска по мере ввода текста
-        function enableSearch() {
-            const searchInput = document.getElementById('search-input');
-            searchInput.disabled = false;
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase().trim();
-                const filtered = allProjects.filter(project => 
-                    project.title.toLowerCase().includes(query)
+        function initControls() {
+            const searchBox = document.getElementById('search-input');
+            searchBox.disabled = false;
+            searchBox.addEventListener('input', (event) => {
+                const searchTerm = event.target.value.toLowerCase().trim();
+                const filteredResults = projectCollection.filter(item => 
+                    item.title.toLowerCase().includes(searchTerm)
                 );
-                renderProjects(filtered);
+                displayProjects(filteredResults);
+            });
+
+            const randomBtn = document.getElementById('random-btn');
+            randomBtn.style.display = 'inline-block';
+        }
+
+        function displayProjects(list) {
+            const gridContainer = document.getElementById('projects-container');
+            gridContainer.innerHTML = '';
+
+            list.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('project-card');
+
+                const previewImg = document.createElement('img');
+                previewImg.src = item.image || `https://mit.edu{item.id}_282x218.png`;
+                previewImg.alt = item.title;
+                previewImg.loading = 'lazy';
+
+                const infoBlock = document.createElement('div');
+                infoBlock.classList.add('project-card-info');
+
+                const textTitle = document.createElement('div');
+                textTitle.classList.add('project-card-title');
+                textTitle.textContent = item.title;
+
+                infoBlock.appendChild(textTitle);
+                card.appendChild(previewImg);
+                card.appendChild(infoBlock);
+                card.appendChild(infoBlock);
+
+                card.onclick = () => launchGame(item);
+
+                gridContainer.appendChild(card);
             });
         }
 
-        // Отрисовка карточек проектов с картинками
-        function renderProjects(projectsList) {
-            const projectsElement = document.getElementById('projects');
-            projectsElement.innerHTML = '';
-            
-            projectsList.forEach(project => {
-                const projectElement = document.createElement('div');
-                projectElement.classList.add('project');
-                
-                const imgElement = document.createElement('img');
-                imgElement.src = project.image || `https://mit.edu{project.id}_282x218.png`;
-                imgElement.alt = project.title;
-                imgElement.loading = "lazy"; // Оптимизация: ленивая загрузка картинок
-                
-                const infoElement = document.createElement('div');
-                infoElement.classList.add('project-info');
-
-                const titleElement = document.createElement('div');
-                titleElement.classList.add('project-title');
-                titleElement.textContent = project.title;
-                
-                infoElement.appendChild(titleElement);
-                projectElement.appendChild(imgElement);
-                projectElement.appendChild(infoElement);
-                
-                projectElement.onclick = () => {
-                    document.getElementById('projects-page').style.display = 'none';
-                    document.getElementById('game-container').style.display = 'block';
-                    document.getElementById('game-title').textContent = project.title;
-                    document.getElementById('scratch-iframe').src = `https://mit.edu{project.id}/embed`;
-                };
-                
-                projectsElement.appendChild(projectElement);
-            });
+        function playRandomGame() {
+            if (projectCollection.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * projectCollection.length);
+            const randomProject = projectCollection[randomIndex];
+            launchGame(randomProject);
         }
 
-        function backToProjects() {
-            document.getElementById('game-container').style.display = 'none';
-            document.getElementById('projects-page').style.display = 'block';
-            document.getElementById('scratch-iframe').src = '';
+        function launchGame(item) {
+            document.getElementById('catalog-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+            document.getElementById('game-title').textContent = item.title;
+            document.getElementById('scratch-player').src = `https://mit.edu{item.id}/embed`;
         }
 
-        loadNextBatch();
+        function closeGame() {
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('catalog-view').style.display = 'block';
+            document.getElementById('scratch-player').src = '';
+        }
+
+        fetchStudioProjects();
     </script>
 </body>
 </html>
+
