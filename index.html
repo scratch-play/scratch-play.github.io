@@ -165,13 +165,14 @@
         let offset = 0;
         let allProjects = []; 
 
-        // Ваша личная ссылка на прокси-сервер Vercel
+        // Ваша личная рабочая ссылка на прокси-сервер Vercel
         const PROXY_URL = 'https://vercel.app';
 
         async function loadNextBatch() {
             const statusElement = document.getElementById('status');
             try {
-                const targetUrl = `https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
+                // Полностью исправленный и корректный URL для обращения к API Scratch
+                const targetUrl = `https://scratch.mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
                 const finalUrl = PROXY_URL + encodeURIComponent(targetUrl);
                 
                 const response = await fetch(finalUrl);
@@ -184,7 +185,7 @@
                     offset += LIMIT;
                     statusElement.textContent = `Загрузка... Собрано проектов: ${allProjects.length}`;
                     
-                    // Небольшая задержка перед следующим шагом (свой прокси отвечает мгновенно)
+                    // Небольшая задержка перед следующим шагом
                     await new Promise(resolve => setTimeout(resolve, 300));
                     loadNextBatch();
                 } else {
@@ -200,7 +201,7 @@
                 console.error('Ошибка загрузки:', error);
                 statusElement.style.background = '#ffdddd';
                 statusElement.style.color = '#cc0000';
-                statusElement.textContent = 'Ошибка загрузки. Проверьте статус вашего прокси-сервера на Vercel.';
+                statusElement.textContent = 'Ошибка загрузки. Проверьте статус вашего прокси-сервера или откройте консоль браузера (F12).';
             }
         }
 
@@ -259,7 +260,6 @@
             document.getElementById('scratch-iframe').src = '';
         }
 
-        // Запуск логики при открытии страницы
         loadNextBatch();
     </script>
 </body>
