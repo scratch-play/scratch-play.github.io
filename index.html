@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Список проектов</title>
+  <style>
+    .projects {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .project {
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Список проектов</h1>
+  <div class="projects" id="projects"></div>
+
+  <script>
+    // получаем список проектов из студии Scratch
+    fetch('https://scratch.mit.edu/studios/51676986/')
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const projects = doc.querySelectorAll('.project-thumb');
+        const projectsList = [];
+        projects.forEach(project => {
+          const projectId = project.getAttribute('href').split('/').pop();
+          const projectName = project.querySelector('.project-name').textContent;
+          projectsList.push({ id: projectId, name: projectName });
+        });
+        const projectsElement = document.getElementById('projects');
+        projectsList.forEach(project => {
+          const projectElement = document.createElement('div');
+          projectElement.classList.add('project');
+          projectElement.textContent = project.name;
+          projectElement.onclick = () => {
+            window.location.href = `/game.html#${project.id}`;
+          };
+          projectsElement.appendChild(projectElement);
+        });
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  </script>
+</body>
+</html>
