@@ -21,28 +21,28 @@
 <body>
   <h1>Список проектов</h1>
   <div class="projects" id="projects"></div>
+  <div id="game" style="display:none;">
+    <h1>Игра</h1>
+    <iframe src="" frameborder="0" width="100%" height="100%"></iframe>
+  </div>
 
   <script>
-    // получаем список проектов из студии Scratch
-    fetch('https://scratch.mit.edu/studios/51676986/')
-      .then(response => response.text())
-      .then(html => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const projects = doc.querySelectorAll('.project-thumb');
-        const projectsList = [];
-        projects.forEach(project => {
-          const projectId = project.getAttribute('href').split('/').pop();
-          const projectName = project.querySelector('.project-name').textContent;
-          projectsList.push({ id: projectId, name: projectName });
-        });
+    // получаем список проектов из студии ScratchDB
+    fetch('https://api.scratchdb.com/v1/projects/studios/51676986')
+      .then(response => response.json())
+      .then(data => {
+        const projectsList = data.projects;
         const projectsElement = document.getElementById('projects');
         projectsList.forEach(project => {
           const projectElement = document.createElement('div');
           projectElement.classList.add('project');
-          projectElement.textContent = project.name;
+          projectElement.textContent = project.title;
           projectElement.onclick = () => {
-            window.location.href = `/game.html#${project.id}`;
+            const gameElement = document.getElementById('game');
+            gameElement.style.display = 'block';
+            document.getElementById('projects').style.display = 'none';
+            const iframe = gameElement.querySelector('iframe');
+            iframe.src = `https://scratch.mit.edu/projects/${project.id}/embed`;
           };
           projectsElement.appendChild(projectElement);
         });
