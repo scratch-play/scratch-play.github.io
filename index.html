@@ -58,35 +58,37 @@
 <script>
   const studioApiUrl = 'https://api.scratch.mit.edu/studios/51676986/projects?limit=40&offset=0';
 
-  // Наши прокси — разные, не очень популярные, проверяем их поочередно
-  // Формат: {url: прокси_адрес_с_плейсхолдером_API, format: 'direct'|'allorigins'|'thingproxy'}
   const proxyList = [
-    {url: 'https://api.allorigins.win/raw?url=', format: 'raw'},            // отдает напрямую тело (json)
-    {url: 'https://thingproxy.freeboard.io/fetch/', format: 'direct'},     // просто проксирует и отдает json (direct) 
-    {url: 'https://api.allorigins.win/get?url=', format: 'allorigins'},    // обертка {contents: "json-текст"}
-    {url: 'https://api.codetabs.com/v1/proxy?quest=', format: 'direct'},   // проксирует напрямую
-    {url: 'https://cors.bridged.cc/', format: 'direct'},                   // еще один прокси
+    {url: 'https://scratch-play-proxy.vercel.app/?url=', format: 'raw'},
+    {url: 'https://api.allorigins.win/raw?url=', format: 'raw'},
+    {url: 'https://thingproxy.freeboard.io/fetch/', format: 'direct'},
+    {url: 'https://api.allorigins.win/get?url=', format: 'allorigins'},
+    {url: 'https://api.codetabs.com/v1/proxy?quest=', format: 'direct'},
+    {url: 'https://cors.bridged.cc/', format: 'direct'},
+    {url: 'https://corsproxy.io/?', format: 'direct'},
+    {url: 'https://norbert.tech/proxy?url=', format: 'raw'},
   ];
 
   const container = document.getElementById('projects-container');
 
   async function tryFetchWithProxy(proxy) {
     const urlToFetch = proxy.url + encodeURIComponent(studioApiUrl);
+    console.log(`Пытаемся прокси: ${proxy.url}`);
 
     try {
-      const response = await fetch(urlToFetch);
+      const response = await fetch(urlToFetch, {cache: "no-store"});
+      console.log(`Ответ от ${proxy.url}: статус ${response.status}`);
       if (!response.ok) throw new Error(`Статус ${response.status}`);
 
       if(proxy.format === 'allorigins') {
-        // Функция: ответ обернут в JSON {contents: "json-текст"}
         const wrapper = await response.json();
         try {
+          console.log(`Парсим JSON из contents прокси ${proxy.url}`);
           return JSON.parse(wrapper.contents);
         } catch(e) {
           throw new Error('Не удалось распарсить JSON из contents');
         }
       } else if (proxy.format === 'raw' || proxy.format === 'direct') {
-        // Отдаем напрямую JSON
         return await response.json();
       } else {
         throw new Error('Неизвестный формат прокси');
@@ -99,19 +101,20 @@
 
   async function loadProjects() {
     container.textContent = 'Загрузка проектов...';
+
     for(let i=0; i < proxyList.length; i++) {
       const proxy = proxyList[i];
       try {
         const data = await tryFetchWithProxy(proxy);
-
         if (data.projects && data.projects.length > 0) {
+          console.log(`Успешно получили проекты через ${proxy.url}`);
           renderProjects(data.projects);
           return;
         } else {
           console.warn(`Прокси ${proxy.url} вернул пустой список проектов`);
         }
       } catch(e) {
-        // пробуем следующий
+        // Пытаемся следующий прокси
       }
     }
     container.textContent = 'Не удалось загрузить проекты с помощью доступных прокси.';
