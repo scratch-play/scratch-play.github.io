@@ -3,98 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проекты из студии Scratch-Play</title>
+    <title>Список всех проектов студии</title>
     <style>
-        .projects { display: flex; flex-wrap: wrap; }
-        .project { margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 10px; cursor: pointer; background: #f9f9f9; }
-        .project:hover { background: #e0e0e0; }
-        #game { width: 100%; height: 600px; }
-        #status { font-weight: bold; color: #555; margin: 10px 0; }
+        body { font-family: sans-serif; margin: 20px; background: #fafafa; }
+        .projects { display: flex; flex-wrap: wrap; gap: 15px; }
+        .project { 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            background: #fff; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .project:hover { transform: translateY(-2px); border-color: #aaa; }
+        #game-container { width: 100%; height: 600px; display: none; }
+        #status { font-weight: bold; color: #666; margin-bottom: 20px; }
+        button { padding: 10px 20px; margin-bottom: 15px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; background: #fff; }
+        button:hover { background: #eee; }
     </style>
 </head>
 <body>
+
     <div id="projects-page">
-        <h1>Проекты</h1>
-        <div id="status">Загрузка проектов...</div>
+        <h1>Список проектов студии</h1>
+        <div id="status">Подключение к API Scratch...</div>
         <div class="projects" id="projects"></div>
     </div>
 
-    <div id="game" style="display:none;">
-        <button onclick="backToProjects()" style="padding: 10px; margin-bottom: 10px; cursor: pointer;">← Назад к списку</button>
-        <h1>Игра</h1>
-        <iframe src="" frameborder="0" width="100%" height="100%" allowtransparency="true" allowfullscreen="true"></iframe>
+    <div id="game-container">
+        <button onclick="backToProjects()">← Назад к списку</button>
+        <h1 id="game-title">Игра</h1>
+        <iframe id="scratch-iframe" src="" frameborder="0" width="100%" height="100%" allowtransparency="true" allowfullscreen="true"></iframe>
     </div>
 
     <script>
         const STUDIO_ID = '51676986'; 
-        const LIMIT = 40; // Максимальный лимит для API Scratch per request
+        const LIMIT = 40; // Максимум за один запрос
+        let offset = 0;
         let allProjects = [];
 
-        // Функция для последовательного сбора всех проектов
+        // Используем публичный CORS-прокси для обхода блокировки Scratch API
+        const PROXY_URL = 'https://allorigins.win';
+        const SCRATCH_API = `https://mit.edu{STUDIO_ID}/projects`;
+
         async function fetchAllProjects() {
             const statusElement = document.getElementById('status');
-            let offset = 0;
             let hasMore = true;
 
             try {
                 while (hasMore) {
-                    statusElement.textContent = `Загружено проектов: ${allProjects.length}...`;
+                    statusElement.textContent = `Загрузка... Получено проектов: ${allProjects.length}`;
                     
-                    // Запрос к официальному API с параметрами лимита и смещения
-                    const response = await fetch(`https://mit.edu{STUDIO_ID}/projects?limit=${LIMIT}&offset=${offset}`);
+                    // Формируем URL запроса со смещением
+                    const targetUrl = `${SCRATCH_API}?limit=${LIMIT}&offset=${offset}`;
+                    // Оборачиваем его в прокси, чтобы обойти CORS блокировку браузера
+                    const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
                     
-                    if (!response.ok) throw new Error('Ошибка сети при ответе API');
+                    if (!response.ok) throw new Error('Ошибка при загрузке данных');
                     
                     const data = await response.json();
 
                     if (data && data.length > 0) {
                         allProjects = allProjects.concat(data);
-                        offset += LIMIT; // Сдвигаем указатель на следующие 40 элементов
+                        offset += LIMIT; // Переходим к следующей странице
                     } else {
-                        hasMore = false; // Если пришел пустой массив — проекты закончились
+                        hasMore = false; // Если массив пустой — мы собрали всё
                     }
                 }
 
-                statusElement.textContent = `Всего найдено проектов: ${allProjects.length}`;
+                statusElement.textContent = `Успешно загружено проектов: ${allProjects.length}`;
                 renderProjects(allProjects);
 
             } catch (error) {
                 console.error(error);
-                statusElement.textContent = 'Не удалось загрузить проекты. Проверьте ID студии.';
+                statusElement.textContent = 'Ошибка загрузки. Пожалуйста, обновите страницу.';
             }
         }
 
-        // Функция отрисовки интерфейса
         function renderProjects(projectsList) {
             const projectsElement = document.getElementById('projects');
-            projectsElement.innerHTML = ''; // Очищаем контейнер
+            projectsElement.innerHTML = ''; 
 
             projectsList.forEach(project => {
                 const projectElement = document.createElement('div');
                 projectElement.classList.add('project');
-                projectElement.textContent = project.title;
+                projectElement.textContent = project.title; // Имя проекта из API
                 
                 projectElement.onclick = () => {
-                    const gameElement = document.getElementById('game');
-                    gameElement.style.display = 'block';
                     document.getElementById('projects-page').style.display = 'none';
+                    document.getElementById('game-container').style.display = 'block';
+                    document.getElementById('game-title').textContent = project.title;
                     
-                    const iframe = gameElement.querySelector('iframe');
-                    // Используем ID проекта для создания фрейма
-                    iframe.src = `https://mit.edu{project.id}/embed`;
+                    // Загружаем плеер Scratch во фрейм по ID проекта
+                    document.getElementById('scratch-iframe').src = `https://mit.edu{project.id}/embed`;
                 };
                 projectsElement.appendChild(projectElement);
             });
         }
 
         function backToProjects() {
-            document.getElementById('game').style.display = 'none';
+            document.getElementById('game-container').style.display = 'none';
             document.getElementById('projects-page').style.display = 'block';
-            // Сбрасываем фрейм, чтобы музыка/игра из Scratch прекратилась при выходе
-            document.getElementById('game').querySelector('iframe').src = ''; 
+            document.getElementById('scratch-iframe').src = ''; // Останавливаем игру/звук
         }
 
-        // Запуск процесса при загрузке страницы
+        // Запуск кода
         fetchAllProjects();
     </script>
 </body>
