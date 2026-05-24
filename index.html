@@ -3,321 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игровая студия Scratch</title>
+    <title>Scratch Студия</title>
     <style>
-        :root {
-            --bg-color: #fafafa;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #dddddd;
-            --accent-color: #4c97ff;
-            --accent-hover: #357ae8;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 25px;
-            align-items: center;
-        }
-
-        #status {
-            font-weight: bold;
-            padding: 10px 15px;
-            background-color: #eeeeee;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        #search-input {
-            flex: 1;
-            min-width: 200px;
-            max-width: 400px;
-            padding: 12px 15px;
-            font-size: 15px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        #search-input:focus {
-            border-color: var(--accent-color);
-        }
-
-        #search-input:disabled {
-            background-color: #eaeaea;
-            cursor: not-allowed;
-        }
-
-        .btn-random {
-            padding: 12px 20px;
-            font-size: 15px;
-            font-weight: bold;
-            color: white;
-            background-color: #2ecc71;
-            border: 1px solid #2ecc71;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s;
-            display: none;
-        }
-
-        .btn-random:hover {
-            background-color: #27ae60;
-            border-color: #27ae60;
-        }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 20px;
-        }
-
-        .project-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            overflow: hidden;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .project-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--accent-color);
-            box-shadow: 0 6px 12px rgba(76,151,255,0.15);
-        }
-
-        .project-card img {
-            width: 100%;
-            aspect-ratio: 4 / 3;
-            object-fit: cover;
-            background-color: #f0f0f0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .project-card-info {
-            padding: 12px;
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .project-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            line-height: 1.4;
-            word-break: break-word;
-        }
-
-        #game-view {
-            display: none;
-        }
-
-        button.btn-back {
-            padding: 10px 20px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            border-radius: 6px;
-            border: 1px solid var(--accent-color);
-            background-color: var(--accent-color);
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 14px;
-            transition: background-color 0.2s;
-        }
-
-        button.btn-back:hover {
-            background-color: var(--accent-hover);
-        }
-
-        #game-title {
-            margin: 0 0 20px 0;
-            font-size: 22px;
-        }
-
-        .player-wrapper {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px solid var(--border-color);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-        }
-
-        .player-wrapper iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000000;
-        }
-
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #fafafa; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; align-items: center; }
+        #status { font-weight: bold; padding: 10px 15px; background: #eee; border-radius: 6px; font-size: 14px; }
+        #search-input { flex: 1; min-width: 200px; max-width: 400px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; outline: none; }
+        #search-input:focus { border-color: #4c97ff; }
+        .btn-random, button.btn-back { padding: 12px 20px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-random { background: #2ecc71; display: none; }
+        button.btn-back { background: #4c97ff; margin-bottom: 20px; }
+        .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .project-card { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+        .project-card:hover { transform: translateY(-4px); border-color: #4c97ff; }
+        .project-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
+        .project-card-title { padding: 12px; font-size: 14px; font-weight: bold; text-align: center; }
+        #game-view, #search-input:disabled { display: none; }
+        .player-wrapper { position: relative; width: 100%; padding-top: 56.25%; border-radius: 12px; overflow: hidden; border: 2px solid #ddd; }
+        .player-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; }
         @media (max-width: 480px) {
-            body { padding: 12px; }
-            .controls { gap: 10px; }
-            #search-input { min-width: 100%; order: 2; }
-            .btn-random { width: 100%; order: 3; text-align: center; }
+            body { padding: 12px; } .controls { gap: 10px; } #search-input, .btn-random { width: 100%; order: 2; }
             .projects-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 12px; }
-            .project-card-title { font-size: 13px; }
-            .project-card-info { padding: 8px; }
-            h1 { font-size: 22px; }
         }
     </style>
 </head>
 <body>
-
     <div class="container" id="catalog-view">
         <h1>Список проектов студии</h1>
         <div class="controls">
             <div id="status">Загрузка проектов...</div>
-            <input type="text" id="search-input" placeholder="Поиск проекта по названию..." disabled>
+            <input type="text" id="search-input" placeholder="Поиск проекта..." disabled>
             <button class="btn-random" id="random-btn" onclick="playRandomGame()">🎲 Случайная игра</button>
         </div>
         <div class="projects-grid" id="projects-container"></div>
     </div>
-
     <div class="container" id="game-view">
-        <button class="btn-back" onclick="closeGame()">← Назад к списку</button>
+        <button class="btn-back" onclick="toggleView(false)">← Назад</button>
         <h2 id="game-title">Игра</h2>
-        <div class="player-wrapper">
-            <iframe id="scratch-player" src="" frameborder="0" allowtransparency="true" allowfullscreen="true"></iframe>
-        </div>
+        <div class="player-wrapper"><iframe id="scratch-player" frameborder="0" allowfullscreen></iframe></div>
     </div>
     <script>
-        const STUDIO_ID = '51676986';
-        const PAGE_LIMIT = 40;
-        const PROXY_URL = 'https://vercel.app';
-        
-        let currentOffset = 0;
-        let projectCollection = [];
+        const STUDIO_ID = '51676986', PAGE_LIMIT = 40, PROXY_URL = 'https://vercel.app';
+        let offset = 0, projectCollection = [];
 
         async function fetchStudioProjects() {
             const statusLabel = document.getElementById('status');
             try {
-                const apiTarget = `https://mit.edu{STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${currentOffset}&_nocache=${Date.now()}`;
-                const proxyRequestUrl = PROXY_URL + encodeURIComponent(apiTarget);
-
-                const response = await fetch(proxyRequestUrl);
-                if (!response.ok) throw new Error(`Код ответа сервера: ${response.status}`);
-
+                const apiTarget = `https://mit.edu{STUDIO_ID}/projects?limit=${PAGE_LIMIT}&offset=${offset}&_nocache=${Date.now()}`;
+                const response = await fetch(PROXY_URL + encodeURIComponent(apiTarget));
+                if (!response.ok) throw new Error();
                 const data = await response.json();
 
-                if (data && data.length > 0) {
+                if (data?.length > 0) {
                     projectCollection = projectCollection.concat(data);
-                    currentOffset += PAGE_LIMIT;
-                    statusLabel.textContent = `Загрузка... Получено проектов: ${projectCollection.length}`;
-                    
-                    await new Promise(resolve => setTimeout(resolve, 250));
-                    fetchStudioProjects();
+                    offset += PAGE_LIMIT;
+                    statusLabel.textContent = `Загрузка... Получено: ${projectCollection.length}`;
+                    setTimeout(fetchStudioProjects, 250);
                 } else {
-                    if (projectCollection.length === 0) {
-                        statusLabel.textContent = 'В этой студии нет доступных проектов.';
-                    } else {
-                        statusLabel.textContent = `Успешно загружено проектов: ${projectCollection.length}`;
-                        initControls();
-                        displayProjects(projectCollection);
-                    }
+                    statusLabel.textContent = `Успешно загружено: ${projectCollection.length}`;
+                    document.getElementById('search-input').disabled = false;
+                    document.getElementById('random-btn').style.display = 'inline-block';
+                    displayProjects(projectCollection);
                 }
             } catch (err) {
-                console.error('Ошибка исполнения запроса:', err);
-                statusLabel.style.backgroundColor = '#ffeef0';
-                statusLabel.style.color = '#d9383a';
-                statusLabel.textContent = 'Ошибка получения данных. Перезагрузите страницу с помощью Ctrl+F5.';
+                statusLabel.style.background = '#ffeef0'; statusLabel.style.color = '#d9383a';
+                statusLabel.textContent = 'Ошибка получения данных. Нажмите Ctrl+F5.';
             }
         }
 
-        function initControls() {
-            const searchBox = document.getElementById('search-input');
-            searchBox.disabled = false;
-            searchBox.addEventListener('input', (event) => {
-                const searchTerm = event.target.value.toLowerCase().trim();
-                const filteredResults = projectCollection.filter(item => 
-                    item.title.toLowerCase().includes(searchTerm)
-                );
-                displayProjects(filteredResults);
-            });
-
-            const randomBtn = document.getElementById('random-btn');
-            randomBtn.style.display = 'inline-block';
-        }
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            displayProjects(projectCollection.filter(item => item.title.toLowerCase().includes(term)));
+        });
 
         function displayProjects(list) {
-            const gridContainer = document.getElementById('projects-container');
-            gridContainer.innerHTML = '';
-
+            const container = document.getElementById('projects-container');
+            container.innerHTML = '';
             list.forEach(item => {
                 const card = document.createElement('div');
-                card.classList.add('project-card');
-
-                const previewImg = document.createElement('img');
-                previewImg.src = item.image || `https://mit.edu{item.id}_282x218.png`;
-                previewImg.alt = item.title;
-                previewImg.loading = 'lazy';
-
-                const infoBlock = document.createElement('div');
-                infoBlock.classList.add('project-card-info');
-
-                const textTitle = document.createElement('div');
-                textTitle.classList.add('project-card-title');
-                textTitle.textContent = item.title;
-
-                infoBlock.appendChild(textTitle);
-                card.appendChild(previewImg);
-                card.appendChild(infoBlock);
-
-                card.onclick = () => launchGame(item);
-
-                gridContainer.appendChild(card);
+                card.className = 'project-card';
+                card.innerHTML = `<img src="${item.image || `https://mit.edu{item.id}_282x218.png`}" loading="lazy"><div class="project-card-title">${item.title}</div>`;
+                card.onclick = () => { toggleView(true); document.getElementById('game-title').textContent = item.title; document.getElementById('scratch-player').src = `https://mit.edu{item.id}/embed`; };
+                container.appendChild(card);
             });
         }
 
         function playRandomGame() {
-            if (projectCollection.length === 0) return;
-            const randomIndex = Math.floor(Math.random() * projectCollection.length);
-            const randomProject = projectCollection[randomIndex];
-            launchGame(randomProject);
+            if (projectCollection.length) displayProjects([projectCollection[Math.floor(Math.random() * projectCollection.length)]]);
+            const firstCard = document.querySelector('.project-card');
+            if (firstCard) firstCard.click();
         }
 
-        function launchGame(item) {
-            document.getElementById('catalog-view').style.display = 'none';
-            document.getElementById('game-view').style.display = 'block';
-            document.getElementById('game-title').textContent = item.title;
-            document.getElementById('scratch-player').src = `https://mit.edu{item.id}/embed`;
-        }
-
-        function closeGame() {
-            document.getElementById('game-view').style.display = 'none';
-            document.getElementById('catalog-view').style.display = 'block';
-            document.getElementById('scratch-player').src = '';
+        function toggleView(showGame) {
+            document.getElementById('catalog-view').style.display = showGame ? 'none' : 'block';
+            document.getElementById('game-view').style.display = showGame ? 'block' : 'none';
+            if (!showGame) { document.getElementById('scratch-player').src = ''; displayProjects(projectCollection); document.getElementById('search-input').value = ''; }
         }
 
         fetchStudioProjects();
