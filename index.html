@@ -39,6 +39,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.2s ease;
     }
     button:disabled {
       background: #aaa;
@@ -59,6 +60,7 @@
       text-align: center;
       box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
       transition: box-shadow 0.2s ease;
+      user-select: none;
     }
     .card:hover {
       box-shadow: 0 5px 15px rgb(0 0 0 / 0.2);
@@ -81,17 +83,17 @@
   </style>
 </head>
 <body>
-  <h1>Загрузка Scratch проекта</h1>
+  <h1>Загрузка Scratch проектов</h1>
 
-  <form id="uploadForm">
+  <form id="uploadForm" enctype="multipart/form-data">
     <label for="title">Название проекта</label>
-    <input type="text" id="title" required placeholder="Введите название"/>
+    <input type="text" id="title" name="title" required placeholder="Введите название"/>
 
     <label for="projectFile">Файл проекта (.sb3)</label>
-    <input type="file" id="projectFile" accept=".sb3" required/>
+    <input type="file" id="projectFile" name="projectFile" accept=".sb3" required/>
 
     <label for="thumbnail">Обложка (URL изображения)</label>
-    <input type="text" id="thumbnail" placeholder="https://example.com/image.png" />
+    <input type="text" id="thumbnail" name="thumbnail" placeholder="https://example.com/image.png" />
 
     <button type="submit">Загрузить проект</button>
   </form>
@@ -99,112 +101,136 @@
   <h2>Загруженные проекты</h2>
   <div id="projects">Загрузка...</div>
 
-  <!-- Supabase JS CDN -->
+  <!-- Подключение Supabase JS SDK  -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
   <script>
-    // Твои данные Supabase
-    const SUPABASE_URL = 'https://uiaczufpqmrwrjbyffib.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpYWN6dWZwcW1yd3JqYnlmZmliIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY2NjI5MSwiZXhwIjoyMDk1MjQyMjkxfQ.EB0A6U13MXaVdCM5nEQqib-C0dIT9g4xUZiHB8et5aw';
+    (function(){
+      const SUPABASE_URL = 'https://uiaczufpqmrwrjbyffib.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpYWN6dWZwcW1yd3JqYnlmZmliIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY2NjI5MSwiZXhwIjoyMDk1MjQyMjkxfQ.EB0A6U13MXaVdCM5nEQqib-C0dIT9g4xUZiHB8et5aw';
 
-    // Создаём клиент supabase правильно через supabaseJs
-    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      // Создаём клиент supabase (SDK v2 создаёт глобальный объект supabase)
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const uploadForm = document.getElementById('uploadForm');
-    const projectsContainer = document.getElementById('projects');
+      const uploadForm = document.getElementById('uploadForm');
+      const projectsContainer = document.getElementById('projects');
 
-    async function loadProjects() {
-      projectsContainer.textContent = 'Загрузка...';
+      // Загрузка списка проектов из таблицы и отображение
+      async function loadProjects() {
+        projectsContainer.textContent = 'Загрузка...';
 
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('added_at', { ascending: false });
-
-      if(error) {
-        projectsContainer.textContent = 'Ошибка загрузки проектов: ' + error.message;
-        return;
-      }
-      if(data.length === 0) {
-        projectsContainer.textContent = 'Пока нет проектов';
-        return;
-      }
-
-      projectsContainer.innerHTML = '';
-
-      data.forEach(({id, title, project_file_url, thumbnail_url}) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.title = title;
-        card.onclick = () => {
-          window.location.href = `/game#${id}`;
-        };
-
-        card.innerHTML = `
-          <img src="${thumbnail_url || 'https://via.placeholder.com/180x120?text=No+Image'}" alt="${title}" />
-          <div class="title">${title}</div>
-        `;
-
-        projectsContainer.appendChild(card);
-      });
-    }
-
-    uploadForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const title = document.getElementById('title').value.trim();
-      const projectFile = document.getElementById('projectFile').files[0];
-      let thumbnail = document.getElementById('thumbnail').value.trim();
-
-      if (!title || !projectFile) {
-        alert('Пожалуйста, заполните название и выберите файл проекта.');
-        return;
-      }
-
-      if (!thumbnail) {
-        thumbnail = ''; 
-      }
-
-      uploadForm.querySelector('button').disabled = true;
-      uploadForm.querySelector('button').textContent = 'Загрузка...';
-
-      try {
-        const fileName = Date.now() + '_' + projectFile.name;
-
-        const { error: uploadError } = await supabase.storage
+        // Подгружаем проекты, сортируем по дате добавления (свежие сверху)
+        const { data, error } = await supabase
           .from('projects')
-          .upload(fileName, projectFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
+          .select('id, title, project_file_url, thumbnail_url')
+          .order('added_at', { ascending: false });
 
-        if(uploadError) throw uploadError;
+        if(error) {
+          projectsContainer.textContent = 'Ошибка загрузки проектов: ' + error.message;
+          return;
+        }
 
-        const { data: publicURLData } = supabase.storage.from('projects').getPublicUrl(fileName);
-        const project_file_url = publicURLData.publicUrl;
+        if(!data || data.length === 0) {
+          projectsContainer.textContent = 'Пока нет проектов';
+          return;
+        }
 
-        const { error: dbError } = await supabase.from('projects').insert([{
-          title,
-          project_file_url,
-          thumbnail_url: thumbnail,
-        }]);
+        // Очищаем контейнер и создаём карточки
+        projectsContainer.innerHTML = '';
 
-        if(dbError) throw dbError;
+        data.forEach(({id, title, project_file_url, thumbnail_url}) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.title = title;
 
-        alert('Проект успешно загружен!');
+          card.onclick = () => {
+            // Переходим на страницу игры с хэшем в id проекта
+            window.location.href = `/game#${id}`;
+          };
 
-        uploadForm.reset();
-        loadProjects();
+          card.innerHTML = `
+            <img src="${thumbnail_url || 'https://via.placeholder.com/180x120?text=No+Image'}" alt="${title}" />
+            <div class="title" title="${title}">${title}</div>
+          `;
+
+          projectsContainer.appendChild(card);
+        });
       }
-      catch(err) {
-        alert('Ошибка: ' + err.message);
-      }
-      finally {
-        uploadForm.querySelector('button').disabled = false;
-        uploadForm.querySelector('button').textContent = 'Загрузить проект';
-      }
-    });
 
-    loadProjects();
+      // Обработка загрузки формы
+      uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const title = uploadForm.title.value.trim();
+        const projectFile = uploadForm.projectFile.files[0];
+        let thumbnail = uploadForm.thumbnail.value.trim();
+
+        if (!title || !projectFile) {
+          alert('Пожалуйста, введите название и выберите .sb3 файл проекта.');
+          return;
+        }
+
+        // Можно добавить проверку размера и расширения файла
+        if(projectFile.size > 50 * 1024 * 1024) { // например, лимит 50 МБ
+          alert('Файл слишком большой (максимум 50 МБ).');
+          return;
+        }
+        if(!projectFile.name.toLowerCase().endsWith('.sb3')) {
+          alert('Выберите файл с расширением .sb3');
+          return;
+        }
+
+        if (!thumbnail) {
+          thumbnail = ''; // Обложка необязательна
+        }
+
+        const submitBtn = uploadForm.querySelector('button');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Загрузка...';
+
+        try {
+          // Для уникальности имени файла — используем timestamp + имя файла
+          const fileName = `projects/${Date.now()}_${projectFile.name}`;
+
+          // Загружаем файл в Supabase Storage (bucket должен быть создан)
+          let { error: uploadError } = await supabase.storage
+            .from('projects')
+            .upload(fileName, projectFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if(uploadError) throw uploadError;
+
+          // Получаем публичный URL
+          const { data: publicURLData } = supabase.storage.from('projects').getPublicUrl(fileName);
+          const project_file_url = publicURLData.publicUrl;
+
+          // Вставляем запись в базу
+          const { error: dbError } = await supabase.from('projects').insert([{
+            title,
+            project_file_url,
+            thumbnail_url: thumbnail,
+          }]);
+
+          if(dbError) throw dbError;
+
+          alert('Проект успешно загружен!');
+          uploadForm.reset();
+          loadProjects();
+        }
+        catch(err) {
+          alert('Ошибка при загрузке: ' + err.message);
+          console.error(err);
+        }
+        finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Загрузить проект';
+        }
+      });
+
+      // Запускаем загрузку проектов при загрузке страницы
+      loadProjects();
+    })();
   </script>
 </body>
 </html>
