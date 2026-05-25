@@ -5,78 +5,110 @@
   <title>Проигрыватель Scratch проекта</title>
   <style>
     body, html {
-      margin:0; padding:0; width:100%; height:100%; background:#111;
-      display:flex; align-items: center; justify-content: center; 
-      overflow: hidden;
-      color: white;
+      margin: 0; padding: 0; height: 100%;
       font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
       flex-direction: column;
-    }
-    #player-frame {
-      width: 100%;
-      max-width: 960px;
-      height: 540px;
-      border: none;
-      box-shadow: 0 0 40px #5a5a8a;
-      border-radius: 12px;
-    }
-    #error {
-      color: #ff6666;
-      font-weight: bold;
-      margin-top: 20px;
-      font-size: 1.2em;
-      text-align: center;
+      align-items: center;
+      justify-content: flex-start;
     }
     #title {
-      margin-bottom: 15px;
-      font-size: 1.4em;
-      font-weight: 700;
+      margin-top: 20px;
+      font-size: 1.5rem;
+    }
+    #vm-container {
+      margin: 20px;
+      width: 755px;  /* стандартный Scratch 3 размер */
+      height: 520px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #loading {
+      margin-top: 40px;
+      font-size: 1.2rem;
+      color: #555;
     }
   </style>
 </head>
 <body>
-  <div id="title">Загрузка...</div>
-  <iframe id="player-frame" allowfullscreen scrolling="no"></iframe>
-  <div id="error"></div>
+  <div id="title">Загрузка проекта...</div>
+  <div id="loading">Подождите, идет загрузка...</div>
+  <div id="vm-container"></div>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+
+  <!-- scratch-vm и scratch-render -->
+  <script src="https://cdn.jsdelivr.net/npm/scratch-vm@1.17.0/dist/web/scratch-vm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/scratch-render@1.20.2/dist/web/scratch-render.min.js"></script>
 
   <script>
     (async () => {
-      const iframe = document.getElementById('player-frame');
-      const errorDiv = document.getElementById('error');
-      const titleDiv = document.getElementById('title');
+      const SUPABASE_URL = 'https://uiaczufpqmrwrjbyffib.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpYWN6dWZwcW1yd3JqYnlmZmliIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY2NjI5MSwiZXhwIjoyMDk1MjQyMjkxfQ.EB0A6U13MXaVdCM5nEQqib-C0dIT9g4xUZiHB8et5aw';
 
-      // Получаем ID проекта из хеша URL (/game#12345678)
-      const projectId = window.location.hash.substring(1);
+      // Создаём supabase клиент
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      if (!projectId) {
-        errorDiv.textContent = 'Ошибка: Не указан ID проекта в адресе.';
-        titleDiv.textContent = 'Ошибка';
-        iframe.style.display = 'none';
+      // Получаем id из хеша URL
+      const id = window.location.hash.substring(1);
+      if(!id) {
+        document.getElementById('title').textContent = 'Ошибка: не указан ID проекта в URL (#id)';
+        document.getElementById('loading').textContent = '';
         return;
       }
 
-      // Загружаем информацию о проекте, чтобы вывести название
-      const infoUrl = 'https://api.scratch.mit.edu/projects/' + projectId;
+      // Запрашиваем данные проекта по id
+      const { data, error } = await supabase.from('projects').select('title, project_file_url').eq('id', id).single();
 
-      try {
-        const response = await fetch(infoUrl);
-        if (!response.ok) throw new Error('Проект не найден');
-        const projectData = await response.json();
-
-        titleDiv.textContent = projectData.title || 'Scratch проект';
-
-        // Строим URL для встраивания сверху
-        // Scratch iframe player с URL вида https://scratch.mit.edu/projects/{id}/embed
-        // Это официальная встраиваемая версия
-        const embedUrl = `https://scratch.mit.edu/projects/${projectId}/embed`;
-
-        iframe.src = embedUrl;
-
-      } catch(e) {
-        errorDiv.textContent = 'Ошибка загрузки проекта: ' + e.message;
-        titleDiv.textContent = 'Ошибка';
-        iframe.style.display = 'none';
+      if(error || !data) {
+        document.getElementById('title').textContent = 'Ошибка: проект не найден.';
+        document.getElementById('loading').textContent = '';
+        return;
       }
+
+      document.getElementById('title').textContent = data.title || 'Без названия';
+
+      // Создаем VM
+      const vm = new window.ScratchVM.default();
+      
+      // Создаем canvas для рендеринга
+      const container = document.getElementById('vm-container');
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 360;
+      container.appendChild(canvas);
+
+      // Инициализация render engine (scratch-render)
+      const render = new window.ScratchRender.default(canvas);
+      vm.attachRenderer(render);
+
+      // Подключаем audio (need AudioContext)
+      // Добавим простое Audio engine из scratch-audio
+      // Для простоты отключим звук (можно добавить позже)
+
+      // Запускаем VM
+      vm.start();
+
+      // Загружаем sb3 по URL, вытянуть проект.  
+      try {
+        const resp = await fetch(data.project_file_url);
+        if(!resp.ok) throw new Error('Не удалось загрузить sb3 файл');
+
+        const arrayBuffer = await resp.arrayBuffer();
+
+        // загрузка проекта в VM
+        await vm.loadProject(arrayBuffer);
+
+        document.getElementById('loading').textContent = 'Проект загружен, запущен!';
+
+      } catch (e) {
+        document.getElementById('loading').textContent = 'Ошибка загрузки проекта: ' + e.message;
+      }
+
     })();
   </script>
 </body>
