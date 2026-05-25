@@ -2,24 +2,215 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Студия Scratch в iframe</title>
+  <title>Загрузка Scratch проектов</title>
   <style>
-    body, html {
-      margin: 0; padding: 0; height: 100%;
-      background-color: #121212;
-      color: #eee;
+    body {
       font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      color: #222;
+      background: #f5f5f5;
     }
-    iframe {
-      border: none;
-      width: 100vw;
-      height: 100vh;
+    h1 {
+      text-align: center;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    label {
       display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 6px 8px;
+      margin-bottom: 14px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      background: #0077ff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    #projects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .card {
+      cursor: pointer;
+      width: 180px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      text-align: center;
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 5px 15px rgb(0 0 0 / 0.2);
+    }
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+      background: #eee;
+    }
+    .card .title {
+      padding: 10px 8px;
+      font-size: 16px;
+      font-weight: bold;
+      height: 48px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
   </style>
 </head>
 <body>
-  <iframe src="https://scratch.mit.edu/studios/51676986/" allowfullscreen></iframe>
+  <h1>Загрузка Scratch проекта</h1>
+
+  <form id="uploadForm">
+    <label for="title">Название проекта</label>
+    <input type="text" id="title" required placeholder="Введите название"/>
+
+    <label for="projectFile">Файл проекта (.sb3)</label>
+    <input type="file" id="projectFile" accept=".sb3" required/>
+
+    <label for="thumbnail">Обложка (URL изображения)</label>
+    <input type="text" id="thumbnail" placeholder="https://example.com/image.png" />
+
+    <button type="submit">Загрузить проект</button>
+  </form>
+
+  <h2>Загруженные проекты</h2>
+  <div id="projects">Загрузка...</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <script>
+    // Вставь сюда свои данные Supabase — добавь свои права доступа для anon ключа (storage и базы)
+    const SUPABASE_URL = 'https://uiaczufpqmrwrjbyffib.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpYWN6dWZwcW1yd3JqYnlmZmliIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY2NjI5MSwiZXhwIjoyMDk1MjQyMjkxfQ.EB0A6U13MXaVdCM5nEQqib-C0dIT9g4xUZiHB8et5aw';
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const uploadForm = document.getElementById('uploadForm');
+    const projectsContainer = document.getElementById('projects');
+
+    // Функция загрузки списка проектов из базы
+    async function loadProjects() {
+      projectsContainer.textContent = 'Загрузка...';
+
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('added_at', { ascending: false });
+
+      if(error) {
+        projectsContainer.textContent = 'Ошибка загрузки проектов: ' + error.message;
+        return;
+      }
+      if(data.length === 0) {
+        projectsContainer.textContent = 'Пока нет проектов';
+        return;
+      }
+
+      projectsContainer.innerHTML = '';
+
+      data.forEach(({id, title, project_file_url, thumbnail_url}) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.title = title;
+        card.onclick = () => {
+          window.location.href = `/game#${id}`;
+        };
+
+        card.innerHTML = `
+          <img src="${thumbnail_url || 'https://via.placeholder.com/180x120?text=No+Image'}" alt="${title}" />
+          <div class="title">${title}</div>
+        `;
+
+        projectsContainer.appendChild(card);
+      });
+    }
+
+    // Обработчик отправки формы загрузки
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value.trim();
+      const projectFile = document.getElementById('projectFile').files[0];
+      let thumbnail = document.getElementById('thumbnail').value.trim();
+
+      if (!title || !projectFile) {
+        alert('Пожалуйста, заполните название и выберите файл проекта.');
+        return;
+      }
+
+      // Если не ввели обложку - можно поставить плейсхолдер или пустую строку, чтобы не ломать
+      if (!thumbnail) {
+        thumbnail = ''; 
+      }
+
+      uploadForm.querySelector('button').disabled = true;
+      uploadForm.querySelector('button').textContent = 'Загрузка...';
+
+      try {
+        // Загружаем файл проекта в Supabase Storage версии 1, в папку projects
+        // Имя файла - можно давать уникальное, например timestamp + исходное имя
+        const fileName = Date.now() + '_' + projectFile.name;
+
+        const { error: uploadError } = await supabase.storage
+          .from('projects')
+          .upload(fileName, projectFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if(uploadError) throw uploadError;
+
+        // Формируем публичный URL на файл
+        const { data: publicURLData } = supabase.storage.from('projects').getPublicUrl(fileName);
+        const project_file_url = publicURLData.publicUrl;
+
+        // Сохраняем запись в таблицу
+        const { error: dbError } = await supabase.from('projects').insert([{
+          title,
+          project_file_url,
+          thumbnail_url: thumbnail,
+        }]);
+
+        if(dbError) throw dbError;
+
+        alert('Проект успешно загружен!');
+
+        uploadForm.reset();
+        loadProjects();
+      }
+      catch(err) {
+        alert('Ошибка: ' + err.message);
+      }
+      finally {
+        uploadForm.querySelector('button').disabled = false;
+        uploadForm.querySelector('button').textContent = 'Загрузить проект';
+      }
+    });
+
+    // Загрузка проектов при запуске страницы
+    loadProjects();
+  </script>
 </body>
 </html>
