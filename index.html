@@ -99,18 +99,19 @@
   <h2>Загруженные проекты</h2>
   <div id="projects">Загрузка...</div>
 
+  <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
   <script>
-    // Вставь сюда свои данные Supabase — добавь свои права доступа для anon ключа (storage и базы)
+    // Твои данные Supabase
     const SUPABASE_URL = 'https://uiaczufpqmrwrjbyffib.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpYWN6dWZwcW1yd3JqYnlmZmliIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY2NjI5MSwiZXhwIjoyMDk1MjQyMjkxfQ.EB0A6U13MXaVdCM5nEQqib-C0dIT9g4xUZiHB8et5aw';
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Создаём клиент supabase правильно через supabaseJs
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const uploadForm = document.getElementById('uploadForm');
     const projectsContainer = document.getElementById('projects');
 
-    // Функция загрузки списка проектов из базы
     async function loadProjects() {
       projectsContainer.textContent = 'Загрузка...';
 
@@ -147,7 +148,6 @@
       });
     }
 
-    // Обработчик отправки формы загрузки
     uploadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -160,7 +160,6 @@
         return;
       }
 
-      // Если не ввели обложку - можно поставить плейсхолдер или пустую строку, чтобы не ломать
       if (!thumbnail) {
         thumbnail = ''; 
       }
@@ -169,8 +168,6 @@
       uploadForm.querySelector('button').textContent = 'Загрузка...';
 
       try {
-        // Загружаем файл проекта в Supabase Storage версии 1, в папку projects
-        // Имя файла - можно давать уникальное, например timestamp + исходное имя
         const fileName = Date.now() + '_' + projectFile.name;
 
         const { error: uploadError } = await supabase.storage
@@ -182,11 +179,9 @@
 
         if(uploadError) throw uploadError;
 
-        // Формируем публичный URL на файл
         const { data: publicURLData } = supabase.storage.from('projects').getPublicUrl(fileName);
         const project_file_url = publicURLData.publicUrl;
 
-        // Сохраняем запись в таблицу
         const { error: dbError } = await supabase.from('projects').insert([{
           title,
           project_file_url,
@@ -209,7 +204,6 @@
       }
     });
 
-    // Загрузка проектов при запуске страницы
     loadProjects();
   </script>
 </body>
