@@ -4,82 +4,19 @@
   <meta charset="UTF-8" />
   <title>Загрузка Scratch проектов</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 900px;
-      margin: 20px auto;
-      color: #222;
-      background: #f5f5f5;
-    }
-    h1 {
-      text-align: center;
-    }
-    form {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 30px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    input[type="text"], input[type="file"] {
-      width: 100%;
-      padding: 6px 8px;
-      margin-bottom: 14px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 10px 20px;
-      background: #0077ff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    button:disabled {
-      background: #aaa;
-      cursor: not-allowed;
-    }
-    #projects {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-    .card {
-      cursor: pointer;
-      width: 180px;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-      text-align: center;
-      box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
-      transition: box-shadow 0.2s ease;
-      user-select: none;
-    }
-    .card:hover {
-      box-shadow: 0 5px 15px rgb(0 0 0 / 0.2);
-    }
-    .card img {
-      width: 100%;
-      height: 120px;
-      object-fit: contain;
-      background: #eee;
-    }
-    .card .title {
-      padding: 10px 8px;
-      font-size: 16px;
-      font-weight: bold;
-      height: 48px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
+    /* Стили из предыдущего варианта */
+    body { font-family: Arial; max-width: 900px; margin: 20px auto; background: #f5f5f5; color:#222;}
+    h1, h2 { text-align: center; }
+    form { background:#fff; padding:20px; border-radius:8px; margin-bottom:30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    label { display:block; margin-bottom:8px; font-weight:bold; }
+    input[type=text], input[type=file] { width:100%; padding:6px 8px; margin-bottom:14px; box-sizing:border-box; }
+    button { padding:10px 20px; background:#0077ff; color:#fff; border:none; border-radius:5px; cursor:pointer; transition:background-color 0.2s ease; }
+    button:disabled { background:#aaa; cursor:not-allowed; }
+    #projects { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; }
+    .card { cursor:pointer; width:180px; background:#fff; border:1px solid #ddd; border-radius:8px; overflow:hidden; text-align:center; box-shadow:0 2px 5px rgb(0 0 0 / 0.1); transition: box-shadow 0.2s ease; user-select:none; }
+    .card:hover { box-shadow:0 5px 15px rgb(0 0 0 / 0.2); }
+    .card img { width:100%; height:120px; object-fit:contain; background:#eee; }
+    .card .title { padding:10px 8px; font-size:16px; font-weight:bold; height:48px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
   </style>
 </head>
 <body>
@@ -101,25 +38,23 @@
   <h2>Загруженные проекты</h2>
   <div id="projects">Загрузка...</div>
 
-  <!-- Подключение Supabase JS SDK  -->
+  <!-- Подключаем Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
   <script>
     (function(){
       const SUPABASE_URL = 'https://uiaczufpqmrwrjbyffib.supabase.co';
       const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpYWN6dWZwcW1yd3JqYnlmZmliIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY2NjI5MSwiZXhwIjoyMDk1MjQyMjkxfQ.EB0A6U13MXaVdCM5nEQqib-C0dIT9g4xUZiHB8et5aw';
 
-      // Создаём клиент supabase (SDK v2 создаёт глобальный объект supabase)
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      // Инициализируем supabase клиент, чтобы не затенять глобальный объект
+      const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       const uploadForm = document.getElementById('uploadForm');
       const projectsContainer = document.getElementById('projects');
 
-      // Загрузка списка проектов из таблицы и отображение
       async function loadProjects() {
         projectsContainer.textContent = 'Загрузка...';
 
-        // Подгружаем проекты, сортируем по дате добавления (свежие сверху)
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('projects')
           .select('id, title, project_file_url, thumbnail_url')
           .order('added_at', { ascending: false });
@@ -134,16 +69,12 @@
           return;
         }
 
-        // Очищаем контейнер и создаём карточки
         projectsContainer.innerHTML = '';
-
-        data.forEach(({id, title, project_file_url, thumbnail_url}) => {
+        data.forEach(({id, title, thumbnail_url}) => {
           const card = document.createElement('div');
           card.className = 'card';
           card.title = title;
-
           card.onclick = () => {
-            // Переходим на страницу игры с хэшем в id проекта
             window.location.href = `/game#${id}`;
           };
 
@@ -156,7 +87,6 @@
         });
       }
 
-      // Обработка загрузки формы
       uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -165,48 +95,37 @@
         let thumbnail = uploadForm.thumbnail.value.trim();
 
         if (!title || !projectFile) {
-          alert('Пожалуйста, введите название и выберите .sb3 файл проекта.');
+          alert('Введите название и выберите файл .sb3');
           return;
         }
-
-        // Можно добавить проверку размера и расширения файла
-        if(projectFile.size > 50 * 1024 * 1024) { // например, лимит 50 МБ
-          alert('Файл слишком большой (максимум 50 МБ).');
+        if(projectFile.size > 50 * 1024 * 1024) {
+          alert('Максимальный размер файла 50 МБ');
           return;
         }
         if(!projectFile.name.toLowerCase().endsWith('.sb3')) {
-          alert('Выберите файл с расширением .sb3');
+          alert('Файл должен иметь расширение .sb3');
           return;
         }
 
-        if (!thumbnail) {
-          thumbnail = ''; // Обложка необязательна
-        }
+        if (!thumbnail) thumbnail = '';
 
-        const submitBtn = uploadForm.querySelector('button');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Загрузка...';
+        const btn = uploadForm.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Загрузка...';
 
         try {
-          // Для уникальности имени файла — используем timestamp + имя файла
           const fileName = `projects/${Date.now()}_${projectFile.name}`;
 
-          // Загружаем файл в Supabase Storage (bucket должен быть создан)
-          let { error: uploadError } = await supabase.storage
+          let { error: uploadError } = await supabaseClient.storage
             .from('projects')
-            .upload(fileName, projectFile, {
-              cacheControl: '3600',
-              upsert: false
-            });
+            .upload(fileName, projectFile, { cacheControl: '3600', upsert: false });
 
           if(uploadError) throw uploadError;
 
-          // Получаем публичный URL
-          const { data: publicURLData } = supabase.storage.from('projects').getPublicUrl(fileName);
+          const { data: publicURLData } = supabaseClient.storage.from('projects').getPublicUrl(fileName);
           const project_file_url = publicURLData.publicUrl;
 
-          // Вставляем запись в базу
-          const { error: dbError } = await supabase.from('projects').insert([{
+          const { error: dbError } = await supabaseClient.from('projects').insert([{
             title,
             project_file_url,
             thumbnail_url: thumbnail,
@@ -223,12 +142,11 @@
           console.error(err);
         }
         finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Загрузить проект';
+          btn.disabled = false;
+          btn.textContent = 'Загрузить проект';
         }
       });
 
-      // Запускаем загрузку проектов при загрузке страницы
       loadProjects();
     })();
   </script>
